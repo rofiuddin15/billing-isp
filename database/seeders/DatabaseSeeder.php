@@ -29,5 +29,11 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $admin->assignRole($adminRole);
+
+        $this->call([
+            AccountSeeder::class,
+            TransactionCategorySeeder::class,
+            VoucherPackageSeeder::class,
+        ]);
     }
 }

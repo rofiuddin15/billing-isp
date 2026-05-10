@@ -8,7 +8,8 @@ class Customer extends Model
 {
     protected $fillable = [
         'user_id', 'customer_code', 'name', 'address', 'phone', 
-        'pppoe_user', 'monthly_package_id', 'status'
+        'pppoe_user', 'monthly_package_id', 'installation_fee', 'status', 'ip_address',
+        'latitude', 'longitude'
     ];
 
     public function user()

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class CashFlow extends Model
 {
     protected $fillable = [
-        'transaction_date', 'type', 'category', 'amount', 
+        'transaction_date', 'type', 'category_id', 'amount', 
         'description', 'reference_id', 'created_by'
     ];
 
@@ -18,5 +18,10 @@ class CashFlow extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(TransactionCategory::class, 'category_id');
     }
 }

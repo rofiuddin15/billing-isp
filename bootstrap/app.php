@@ -14,6 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         //
     })
+    ->withSchedule(function ($schedule) {
+        $schedule->command('billing:generate')->monthlyOn(1, '00:00');
+    })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();

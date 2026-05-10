@@ -17,4 +17,7 @@ export default defineConfig({
             ignored: ['**/storage/framework/views/**'],
         },
     },
+    optimizeDeps: {
+        include: ['recharts', 'mapbox-gl', 'lucide-react', 'react-router-dom', 'react-redux', '@reduxjs/toolkit', 'react-is'],
+    },
 });
