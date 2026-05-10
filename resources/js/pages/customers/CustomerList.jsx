@@ -275,12 +275,12 @@ const CustomerList = () => {
                             onClick={handleDownloadTemplate}
                             className="flex items-center px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-sm text-sm font-bold hover:bg-slate-50 transition-all shadow-sm active:scale-95"
                         >
-                            <Download className="w-4 h-4 mr-2 text-emerald-600" />
-                            Template
+                            <Download className="w-4 h-4 sm:mr-2 text-emerald-600" />
+                            <span className="hidden sm:inline">Template</span>
                         </button>
                         <label className="flex items-center px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-sm text-sm font-bold hover:bg-slate-50 transition-all shadow-sm active:scale-95 cursor-pointer">
-                            <Upload className={`w-4 h-4 mr-2 text-indigo-600 ${importLoading ? 'animate-bounce' : ''}`} />
-                            {importLoading ? 'Importing...' : 'Import'}
+                            <Upload className={`w-4 h-4 sm:mr-2 text-indigo-600 ${importLoading ? 'animate-bounce' : ''}`} />
+                            <span className="hidden sm:inline">{importLoading ? 'Importing...' : 'Import'}</span>
                             <input type="file" accept=".xlsx,.csv" className="hidden" onChange={handleImportFile} disabled={importLoading} />
                         </label>
                         <button 
@@ -297,15 +297,15 @@ const CustomerList = () => {
                             }}
                             className="flex items-center px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-sm text-sm font-bold hover:bg-slate-50 transition-all shadow-sm active:scale-95"
                         >
-                            <CreditCard className="w-4 h-4 mr-2 text-indigo-600" />
-                            Tagihan
+                            <CreditCard className="w-4 h-4 sm:mr-2 text-indigo-600" />
+                            <span className="hidden sm:inline">Tagihan</span>
                         </button>
                         <button 
                             onClick={() => navigate('/customers/create')}
                             className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-bold transition-all shadow-lg shadow-indigo-500/20 active:scale-95"
                         >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Tambah
+                            <Plus className="w-4 h-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Tambah</span>
                         </button>
                     </div>
                 }

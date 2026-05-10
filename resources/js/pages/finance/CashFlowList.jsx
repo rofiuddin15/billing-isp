@@ -152,8 +152,8 @@ const CashFlowList = () => {
                         onClick={() => setShowModal(true)}
                         className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-bold transition-all shadow-lg shadow-indigo-500/20 active:scale-95"
                     >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Tambah Transaksi
+                        <Plus className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Tambah Transaksi</span>
                     </button>
                 }
             />

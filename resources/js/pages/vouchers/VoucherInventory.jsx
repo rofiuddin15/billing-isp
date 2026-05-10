@@ -109,13 +109,6 @@ const VoucherInventory = () => {
                     <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Inventori Voucher</h2>
                     <p className="text-slate-500 dark:text-slate-400 text-sm">Kelola dan jual voucher yang telah dibuat.</p>
                 </div>
-                <button 
-                    onClick={() => setShowGenerateModal(true)}
-                    className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-semibold transition-all shadow-sm"
-                >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Buat Batch
-                </button>
             </div>
 
             <DataTable 
@@ -135,6 +128,15 @@ const VoucherInventory = () => {
                 onSearchChange={handleSearch}
                 searchPlaceholder="Cari kode voucher..."
                 exportFileName="inventori-voucher"
+                actions={
+                    <button 
+                        onClick={() => setShowGenerateModal(true)}
+                        className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-semibold transition-all shadow-sm active:scale-95"
+                    >
+                        <Plus className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Buat Batch</span>
+                    </button>
+                }
             />
 
             {/* Generate Modal */}

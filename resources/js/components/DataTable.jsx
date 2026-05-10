@@ -132,13 +132,13 @@ const DataTable = ({
                         className="flex items-center px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:text-indigo-600 rounded-sm text-sm font-bold transition-all shadow-sm"
                         title="Export to CSV"
                     >
-                        <Download className="w-4 h-4 mr-2" />
-                        Export
+                        <Download className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Export</span>
                     </button>
                     {onImport && (
                         <label className="flex items-center px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:text-indigo-600 rounded-sm text-sm font-bold cursor-pointer transition-all shadow-sm">
-                            <Upload className="w-4 h-4 mr-2" />
-                            Import
+                            <Upload className="w-4 h-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Import</span>
                             <input type="file" accept=".csv" className="hidden" onChange={handleImport} />
                         </label>
                     )}

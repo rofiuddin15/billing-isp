@@ -164,8 +164,8 @@ const VoucherPackageList = () => {
                         onClick={() => handleOpenModal()}
                         className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-semibold transition-all shadow-sm"
                     >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Tambah Paket
+                        <Plus className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Tambah Paket</span>
                     </button>
                 }
             />

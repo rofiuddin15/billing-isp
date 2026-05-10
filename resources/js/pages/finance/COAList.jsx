@@ -81,15 +81,11 @@ const COAList = () => {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Chart of Accounts</h2>
                     <p className="text-slate-500 dark:text-slate-400 text-sm">Manage your financial structure and account hierarchy.</p>
                 </div>
-                <button className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-semibold transition-all shadow-sm">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Account
-                </button>
             </div>
 
             <DataTable 
@@ -98,6 +94,12 @@ const COAList = () => {
                 loading={loading}
                 getSubRows={row => row.children}
                 searchPlaceholder="Search accounts..."
+                actions={
+                    <button className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-semibold transition-all shadow-sm active:scale-95">
+                        <Plus className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Add Account</span>
+                    </button>
+                }
             />
         </div>
     );
