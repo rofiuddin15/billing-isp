@@ -4,7 +4,8 @@ import {
     Bell, 
     Moon, 
     Sun, 
-    Menu,
+    PanelLeftClose,
+    PanelLeft,
     ChevronDown,
     User
 } from 'lucide-react';
@@ -13,19 +14,23 @@ import { toggleDarkMode, toggleSidebar } from '../store/slices/uiSlice';
 
 const Header = () => {
     const dispatch = useDispatch();
-    const { darkMode } = useSelector(state => state.ui);
+    const { darkMode, sidebarOpen } = useSelector(state => state.ui);
     const { user } = useSelector(state => state.auth);
 
     return (
         <header className="sticky top-0 z-40 flex w-full bg-white drop-shadow-1 dark:bg-slate-900 dark:drop-shadow-none border-b border-slate-200 dark:border-slate-800">
-            <div className="flex flex-grow items-center justify-between px-4 py-4 shadow-2 md:px-6 2xl:px-11">
-                <div className="flex items-center gap-2 sm:gap-4">
+            <div className="flex flex-grow items-center justify-between pl-3 pr-4 py-4 shadow-2 md:pl-4 md:pr-6 2xl:pr-11">
+                <div className="flex items-center gap-2">
                     {/* Sidebar Toggle */}
                     <button
                         onClick={() => dispatch(toggleSidebar())}
-                        className="z-50 block rounded-sm border border-slate-200 bg-white p-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-800 transition-all active:scale-95"
+                        className="z-50 flex items-center justify-center p-1 text-slate-600 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-white transition-all active:scale-90"
                     >
-                        <Menu className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+                        {sidebarOpen ? (
+                            <PanelLeftClose className="w-6 h-6" />
+                        ) : (
+                            <PanelLeft className="w-6 h-6" />
+                        )}
                     </button>
                 </div>
 

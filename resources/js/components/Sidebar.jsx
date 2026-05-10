@@ -47,13 +47,12 @@ const SidebarItem = ({ icon: Icon, label, path, badge, subItems, collapsed }) =>
         </li>
     );
 };
-
 const Sidebar = () => {
     const { sidebarOpen } = useSelector(state => state.ui);
     const collapsed = !sidebarOpen;
 
     return (
-        <aside className={`absolute left-0 top-0 z-50 flex h-screen flex-col overflow-y-hidden bg-white duration-300 ease-in-out dark:bg-slate-900 lg:static lg:translate-x-0 ${sidebarOpen ? 'w-72.5 translate-x-0' : 'w-20 lg:w-20 -translate-x-full lg:translate-x-0'} border-r border-slate-200 dark:border-slate-800`}>
+        <aside className={`sticky left-0 top-0 z-50 flex h-screen flex-col overflow-y-hidden bg-white duration-300 ease-in-out dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 ${sidebarOpen ? 'w-72.5' : 'w-20'}`}>
             {/* Sidebar Header */}
             <div className={`flex items-center gap-2 px-6 py-5.5 lg:py-6.5 ${collapsed ? 'justify-center px-0' : 'justify-between'}`}>
                 <NavLink to="/" className="flex items-center gap-3">

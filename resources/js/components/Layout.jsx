@@ -1,20 +1,27 @@
 import React, { useEffect } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { Navigate, Outlet } from 'react-router-dom';
+import { setSidebarOpen } from '../store/slices/uiSlice';
 
 const Layout = () => {
+    const dispatch = useDispatch();
     const { isAuthenticated } = useSelector(state => state.auth);
     const { darkMode } = useSelector(state => state.ui);
 
     useEffect(() => {
+        // Auto mini sidebar on mobile
+        if (window.innerWidth < 1024) {
+            dispatch(setSidebarOpen(false));
+        }
+
         if (darkMode) {
             document.documentElement.classList.add('dark');
         } else {
             document.documentElement.classList.remove('dark');
         }
-    }, [darkMode]);
+    }, [darkMode, dispatch]);
 
     if (!isAuthenticated) {
         return <Navigate to="/login" replace />;
