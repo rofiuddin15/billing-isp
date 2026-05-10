@@ -34,6 +34,8 @@ class DatabaseSeeder extends Seeder
             AccountSeeder::class,
             TransactionCategorySeeder::class,
             VoucherPackageSeeder::class,
+            MenuPermissionSeeder::class,
+            RoleCleanupSeeder::class,
         ]);
     }
 }

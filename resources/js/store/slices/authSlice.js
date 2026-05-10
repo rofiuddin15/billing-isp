@@ -1,4 +1,9 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import apiFetch from '../../utils/api';
+
+export const fetchMe = createAsyncThunk('auth/fetchMe', async () => {
+    return await apiFetch('/api/auth/me', { method: 'POST' });
+});
 
 const initialState = {
     user: null,
@@ -26,6 +31,13 @@ const authSlice = createSlice({
             state.permissions = [];
             localStorage.removeItem('token');
         },
+    },
+    extraReducers: (builder) => {
+        builder.addCase(fetchMe.fulfilled, (state, action) => {
+            const { user, permissions } = action.payload;
+            state.user = user;
+            state.permissions = permissions;
+        });
     },
 });
 

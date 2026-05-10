@@ -11,7 +11,9 @@ import {
     Tag,
     Landmark,
     FileText,
-    ChevronDown
+    ShieldCheck,
+    ChevronDown,
+    UserCircle
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 
@@ -49,7 +51,44 @@ const SidebarItem = ({ icon: Icon, label, path, badge, subItems, collapsed }) =>
 };
 const Sidebar = () => {
     const { sidebarOpen } = useSelector(state => state.ui);
+    const { permissions = [] } = useSelector(state => state.auth);
     const collapsed = !sidebarOpen;
+
+    const hasPermission = (perm) => {
+        if (!perm) return true;
+        return permissions.includes(perm);
+    };
+
+    const menuGroups = [
+        {
+            title: 'MENU UTAMA',
+            items: [
+                { icon: LayoutDashboard, label: 'Dasbor', path: '/', permission: 'menu.dashboard' },
+                { icon: Users, label: 'Pelanggan', path: '/customers', permission: 'menu.customers' },
+                { icon: Package, label: 'Paket Bulanan', path: '/packages', permission: 'menu.packages' },
+                { icon: Ticket, label: 'Voucher', path: '/vouchers', badge: 'BARU', permission: 'menu.vouchers' },
+                { icon: Wallet, label: 'Arus Kas', path: '/finance', permission: 'menu.finance' },
+                { icon: Landmark, label: 'Bagan Akun', path: '/finance/coa', permission: 'menu.coa' },
+                { icon: FileText, label: 'Buku Besar', path: '/finance/ledger', permission: 'menu.ledger' },
+            ]
+        },
+        {
+            title: 'DATA MASTER',
+            items: [
+                { icon: Ticket, label: 'Paket Voucher', path: '/master/voucher-packages', permission: 'menu.master_vouchers' },
+                { icon: Tag, label: 'Kategori Transaksi', path: '/master/transaction-categories', permission: 'menu.master_categories' },
+            ]
+        },
+        {
+            title: 'DUKUNGAN',
+            items: [
+                { icon: MessageCircle, label: 'Obrolan', path: '/chat', permission: 'menu.chat' },
+                { icon: UserCircle, label: 'Manajemen Staff', path: '/master/users', permission: 'menu.users' },
+                { icon: ShieldCheck, label: 'Akses & Role', path: '/master/roles', permission: 'menu.roles' },
+                { icon: Settings, label: 'Pengaturan', path: '/settings', permission: 'menu.settings' },
+            ]
+        }
+    ];
 
     return (
         <aside className={`sticky left-0 top-0 z-50 flex h-screen flex-col overflow-y-hidden bg-white duration-300 ease-in-out dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 ${sidebarOpen ? 'w-72.5' : 'w-20'}`}>
@@ -67,49 +106,32 @@ const Sidebar = () => {
 
             <div className="no-scrollbar flex flex-col overflow-y-auto duration-300 ease-linear">
                 <nav className={`mt-5 px-4 py-4 lg:mt-9 ${collapsed ? 'px-2' : 'lg:px-6'}`}>
-                    {/* Menu Group */}
-                    <div>
-                        {!collapsed && (
-                            <h3 className="mb-4 ml-4 text-sm font-semibold text-slate-400 uppercase tracking-widest">
-                                MENU UTAMA
-                            </h3>
-                        )}
-                        <ul className="mb-6 flex flex-col gap-1.5">
-                            <SidebarItem icon={LayoutDashboard} label="Dasbor" path="/" collapsed={collapsed} />
-                            <SidebarItem icon={Users} label="Pelanggan" path="/customers" collapsed={collapsed} />
-                            <SidebarItem icon={Package} label="Paket Bulanan" path="/packages" collapsed={collapsed} />
-                            <SidebarItem icon={Ticket} label="Voucher" path="/vouchers" badge="BARU" collapsed={collapsed} />
-                            <SidebarItem icon={Wallet} label="Arus Kas" path="/finance" collapsed={collapsed} />
-                            <SidebarItem icon={Landmark} label="Bagan Akun" path="/finance/coa" collapsed={collapsed} />
-                            <SidebarItem icon={FileText} label="Buku Besar" path="/finance/ledger" collapsed={collapsed} />
-                        </ul>
-                    </div>
+                    {menuGroups.map((group, groupIndex) => {
+                        const visibleItems = group.items.filter(item => hasPermission(item.permission));
+                        if (visibleItems.length === 0) return null;
 
-                    {/* Master Data Group */}
-                    <div>
-                        {!collapsed && (
-                            <h3 className="mb-4 ml-4 text-sm font-semibold text-slate-400 uppercase tracking-widest">
-                                DATA MASTER
-                            </h3>
-                        )}
-                        <ul className="mb-6 flex flex-col gap-1.5">
-                            <SidebarItem icon={Ticket} label="Paket Voucher" path="/master/voucher-packages" collapsed={collapsed} />
-                            <SidebarItem icon={Tag} label="Kategori Transaksi" path="/master/transaction-categories" collapsed={collapsed} />
-                        </ul>
-                    </div>
-
-                    {/* Support Group */}
-                    <div>
-                        {!collapsed && (
-                            <h3 className="mb-4 ml-4 text-sm font-semibold text-slate-400 uppercase tracking-widest">
-                                DUKUNGAN
-                            </h3>
-                        )}
-                        <ul className="mb-6 flex flex-col gap-1.5">
-                            <SidebarItem icon={MessageCircle} label="Obrolan" path="/chat" collapsed={collapsed} />
-                            <SidebarItem icon={Settings} label="Pengaturan" path="/settings" collapsed={collapsed} />
-                        </ul>
-                    </div>
+                        return (
+                            <div key={groupIndex}>
+                                {!collapsed && (
+                                    <h3 className="mb-4 ml-4 text-sm font-semibold text-slate-400 uppercase tracking-widest">
+                                        {group.title}
+                                    </h3>
+                                )}
+                                <ul className="mb-6 flex flex-col gap-1.5">
+                                    {visibleItems.map((item, itemIndex) => (
+                                        <SidebarItem 
+                                            key={itemIndex}
+                                            icon={item.icon} 
+                                            label={item.label} 
+                                            path={item.path} 
+                                            badge={item.badge}
+                                            collapsed={collapsed} 
+                                        />
+                                    ))}
+                                </ul>
+                            </div>
+                        );
+                    })}
                 </nav>
             </div>
         </aside>

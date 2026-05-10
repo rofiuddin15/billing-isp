@@ -4,11 +4,18 @@ import Header from './Header';
 import { useSelector, useDispatch } from 'react-redux';
 import { Navigate, Outlet } from 'react-router-dom';
 import { setSidebarOpen } from '../store/slices/uiSlice';
+import { fetchMe } from '../store/slices/authSlice';
 
 const Layout = () => {
     const dispatch = useDispatch();
-    const { isAuthenticated } = useSelector(state => state.auth);
+    const { isAuthenticated, permissions } = useSelector(state => state.auth);
     const { darkMode } = useSelector(state => state.ui);
+
+    useEffect(() => {
+        if (isAuthenticated && permissions.length === 0) {
+            dispatch(fetchMe());
+        }
+    }, [isAuthenticated, permissions.length, dispatch]);
 
     useEffect(() => {
         // Auto mini sidebar on mobile

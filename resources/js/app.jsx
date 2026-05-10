@@ -21,6 +21,7 @@ import TransactionCategoryList from './pages/finance/TransactionCategoryList';
 import COAList from './pages/finance/COAList';
 import JournalList from './pages/finance/JournalList';
 import UserList from './pages/users/UserList';
+import RoleManagement from './pages/users/RoleManagement';
 import VoucherPackageList from './pages/packages/VoucherPackageList';
 import Settings from './pages/Settings';
 
@@ -48,7 +49,8 @@ root.render(
                     <Route path="finance" element={<CashFlowList />} />
                     <Route path="finance/coa" element={<COAList />} />
                     <Route path="finance/ledger" element={<JournalList />} />
-                    <Route path="users" element={<UserList />} />
+                    <Route path="master/users" element={<UserList />} />
+                    <Route path="master/roles" element={<RoleManagement />} />
                     <Route path="master/voucher-packages" element={<VoucherPackageList />} />
                     <Route path="master/transaction-categories" element={<TransactionCategoryList />} />
                     <Route path="settings" element={<Settings />} />

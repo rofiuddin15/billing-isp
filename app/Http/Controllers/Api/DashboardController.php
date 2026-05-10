@@ -62,6 +62,49 @@ class DashboardController extends Controller
         ->reverse()
         ->values();
 
+        // Calculate Percentage Changes (vs Last Month)
+        $startOfThisMonth = now()->startOfMonth();
+        $lastMonth = now()->subMonth();
+        
+        $lastMonthCustomers = Customer::where('created_at', '<', $startOfThisMonth)->count();
+        $newCustomersThisMonth = Customer::where('created_at', '>=', $startOfThisMonth)->count();
+        if ($lastMonthCustomers == 0) {
+            $customerGrowth = $newCustomersThisMonth > 0 ? 100 : 0;
+        } else {
+            $customerGrowth = ($newCustomersThisMonth / $lastMonthCustomers) * 100;
+        }
+
+        $lastMonthIncome = CashFlow::where('type', 'income')
+            ->whereMonth('transaction_date', $lastMonth->month)
+            ->whereYear('transaction_date', $lastMonth->year)
+            ->sum('amount');
+        if ($lastMonthIncome == 0) {
+            $incomeGrowth = $currentMonthIncome > 0 ? 100 : 0;
+        } else {
+            $incomeGrowth = (($currentMonthIncome - $lastMonthIncome) / $lastMonthIncome) * 100;
+        }
+
+        $lastMonthExpense = CashFlow::where('type', 'expense')
+            ->whereMonth('transaction_date', $lastMonth->month)
+            ->whereYear('transaction_date', $lastMonth->year)
+            ->sum('amount');
+        if ($lastMonthExpense == 0) {
+            $expenseGrowth = $currentMonthExpense > 0 ? 100 : 0;
+        } else {
+            $expenseGrowth = (($currentMonthExpense - $lastMonthExpense) / $lastMonthExpense) * 100;
+        }
+
+        // Vouchers ready change
+        $currentVouchers = Voucher::where('status', 'ready')->count();
+        $lastMonthVouchers = Voucher::where('status', 'ready')
+            ->where('created_at', '<', $startOfThisMonth)
+            ->count();
+        if ($lastMonthVouchers == 0) {
+            $vouchersChange = $currentVouchers > 0 ? 100 : 0;
+        } else {
+            $vouchersChange = (($currentVouchers - $lastMonthVouchers) / $lastMonthVouchers) * 100;
+        }
+
         return response()->json([
             'stats' => [
                 'total_customers' => $totalCustomers,
@@ -70,7 +113,13 @@ class DashboardController extends Controller
                 'month_income' => (float)$currentMonthIncome,
                 'month_expense' => (float)$currentMonthExpense,
                 'balance' => (float)($currentMonthIncome - $currentMonthExpense),
-                'total_arrears' => (float)$totalArrears
+                'total_arrears' => (float)$totalArrears,
+                'growth' => [
+                    'customers' => round($customerGrowth, 1),
+                    'income' => round($incomeGrowth, 1),
+                    'expense' => round($expenseGrowth, 1),
+                    'vouchers' => round($vouchersChange, 1)
+                ]
             ],
             'monthly_chart' => $monthlyStats,
             'recent_transactions' => $recentTransactions,

@@ -176,7 +176,7 @@ const CashFlowList = () => {
                                         required
                                         className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-4 py-2.5 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
                                         value={formData.type}
-                                        onChange={e => setFormData({...formData, type: e.target.value})}
+                                        onChange={e => setFormData({...formData, type: e.target.value, category_id: ''})}
                                     >
                                         <option value="expense">Pengeluaran (-)</option>
                                         <option value="income">Pemasukan (+)</option>

@@ -106,32 +106,32 @@ const Dashboard = () => {
                     title="Pelanggan Aktif" 
                     value={data.stats.total_customers} 
                     icon={Users} 
-                    subValue="+12%" 
-                    trend="up"
+                    subValue={`${data.stats.growth.customers > 0 ? '+' : ''}${data.stats.growth.customers}%`} 
+                    trend={data.stats.growth.customers >= 0 ? 'up' : 'down'}
                     gradient="from-indigo-500 to-blue-600"
                 />
                 <DashboardCard 
                     title="Inventori Voucher" 
                     value={data.stats.vouchers_ready} 
                     icon={Ticket} 
-                    subValue="+5.4%" 
-                    trend="up"
+                    subValue={`${data.stats.growth.vouchers > 0 ? '+' : ''}${data.stats.growth.vouchers}%`} 
+                    trend={data.stats.growth.vouchers >= 0 ? 'up' : 'down'}
                     gradient="from-amber-400 to-orange-500"
                 />
                 <DashboardCard 
                     title="Pendapatan Bulan Ini" 
                     value={`Rp ${Number(data.stats.month_income).toLocaleString()}`} 
                     icon={TrendingUp} 
-                    subValue="+18%" 
-                    trend="up"
+                    subValue={`${data.stats.growth.income > 0 ? '+' : ''}${data.stats.growth.income}%`} 
+                    trend={data.stats.growth.income >= 0 ? 'up' : 'down'}
                     gradient="from-emerald-400 to-teal-600"
                 />
                 <DashboardCard 
                     title="Biaya Operasional" 
                     value={`Rp ${Number(data.stats.month_expense).toLocaleString()}`} 
                     icon={TrendingDown} 
-                    subValue="-2.1%" 
-                    trend="down"
+                    subValue={`${data.stats.growth.expense > 0 ? '+' : ''}${data.stats.growth.expense}%`} 
+                    trend={data.stats.growth.expense <= 0 ? 'up' : 'down'} 
                     gradient="from-rose-400 to-pink-600"
                 />
             </div>

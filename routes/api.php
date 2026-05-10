@@ -46,7 +46,12 @@ Route::group(['middleware' => 'auth:api'], function() {
     Route::get('cash-flow/stats', [CashFlowController::class, 'stats']);
     Route::apiResource('cash-flow', CashFlowController::class);
 
-    Route::get('roles', [UserController::class, 'roles']);
+    Route::get('roles', [\App\Http\Controllers\Api\RoleController::class, 'index']);
+    Route::post('roles', [\App\Http\Controllers\Api\RoleController::class, 'store']);
+    Route::delete('roles/{role}', [\App\Http\Controllers\Api\RoleController::class, 'destroy']);
+    Route::get('permissions', [\App\Http\Controllers\Api\RoleController::class, 'permissions']);
+    Route::post('roles/{role}/permissions', [\App\Http\Controllers\Api\RoleController::class, 'updatePermissions']);
+    
     Route::apiResource('users', UserController::class);
 
     Route::post('payments/generate', [PaymentController::class, 'generateMonthlyBills']);

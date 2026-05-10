@@ -58,7 +58,7 @@ const DataTable = ({
         onSortingChange: setSorting,
         onPaginationChange: onPaginationChange,
         onExpandedChange: setExpanded,
-        pageCount: pageCount,
+        ...(manualPagination ? { pageCount } : {}),
         manualPagination: manualPagination,
         getSubRows: getSubRows,
         getRowCanExpand: getRowCanExpand,

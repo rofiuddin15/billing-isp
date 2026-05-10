@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchUsers, fetchRoles } from '../../store/slices/userSlice';
-import { User, Plus, Edit2, Trash2, Mail, Shield, X, Key } from 'lucide-react';
+import { User, Plus, Edit2, Trash2, Mail, Shield, X, Key, UserCheck, ShieldCheck, Download } from 'lucide-react';
 import Badge from '../../components/Badge';
 import apiFetch from '../../utils/api';
 import { toast } from 'react-toastify';
+import DataTable from '../../components/DataTable';
 
 const UserList = () => {
     const dispatch = useDispatch();
@@ -52,13 +53,13 @@ const UserList = () => {
                     method: 'PUT',
                     body: JSON.stringify(formData),
                 });
-                toast.success('User updated');
+                toast.success('Data staff berhasil diperbarui');
             } else {
                 await apiFetch('/api/users', {
                     method: 'POST',
                     body: JSON.stringify(formData),
                 });
-                toast.success('User created');
+                toast.success('Staff baru berhasil ditambahkan');
             }
             setShowModal(false);
             dispatch(fetchUsers());
@@ -68,10 +69,10 @@ const UserList = () => {
     };
 
     const handleDelete = async (id) => {
-        if (confirm('Are you sure you want to delete this staff member?')) {
+        if (confirm('Apakah Anda yakin ingin menghapus staff ini?')) {
             try {
                 await apiFetch(`/api/users/${id}`, { method: 'DELETE' });
-                toast.success('User deleted');
+                toast.success('Staff berhasil dihapus');
                 dispatch(fetchUsers());
             } catch (error) {
                 toast.error(error.message);
@@ -79,135 +80,170 @@ const UserList = () => {
         }
     };
 
+    const columns = useMemo(() => [
+        {
+            accessorKey: 'name',
+            header: 'Nama Staff',
+            cell: ({ row }) => (
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+                        <User className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <div className="text-sm font-bold text-slate-800 dark:text-white leading-none mb-1">{row.original.name}</div>
+                        <div className="text-[10px] text-slate-500 font-mono tracking-tight">ID: #{row.original.id}</div>
+                    </div>
+                </div>
+            )
+        },
+        {
+            accessorKey: 'email',
+            header: 'Email',
+            cell: ({ row }) => (
+                <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                    <Mail className="w-4 h-4" />
+                    <span className="text-sm font-medium">{row.original.email}</span>
+                </div>
+            )
+        },
+        {
+            accessorKey: 'role',
+            header: 'Role / Akses',
+            cell: ({ row }) => {
+                const roleName = row.original.roles[0]?.name || 'Tanpa Role';
+                return (
+                    <Badge variant="indigo" className="text-[10px] uppercase font-black px-3 py-1">
+                        {roleName}
+                    </Badge>
+                );
+            }
+        },
+        {
+            id: 'actions',
+            header: 'Aksi',
+            cell: ({ row }) => (
+                <div className="flex items-center justify-end gap-2">
+                    <button 
+                        onClick={() => handleOpenModal(row.original)}
+                        className="p-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-sm transition-all shadow-md shadow-indigo-500/10 active:scale-95"
+                        title="Edit Staff"
+                    >
+                        <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button 
+                        onClick={() => handleDelete(row.original.id)}
+                        className="p-2 bg-rose-500 hover:bg-rose-600 text-white rounded-sm transition-all shadow-md shadow-rose-500/10 active:scale-95"
+                        title="Hapus Staff"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+                </div>
+            )
+        }
+    ], [roles]);
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Staff Management</h2>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm">Manage your team members and their roles.</p>
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Manajemen Staff</h2>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">Kelola anggota tim dan hak akses mereka dalam tabel terstruktur.</p>
                 </div>
-                <button 
-                    onClick={() => handleOpenModal()}
-                    className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-semibold transition-all shadow-sm"
-                >
-                    <Plus className="w-4 h-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Add Staff</span>
-                </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {loading ? (
-                    [1, 2, 3].map(i => (
-                        <div key={i} className="h-48 bg-white dark:bg-slate-900 rounded-sm animate-pulse border border-slate-200 dark:border-slate-800" />
-                    ))
-                ) : (
-                    users.map((user) => (
-                        <div key={user.id} className="bg-white dark:bg-slate-900 p-6 rounded-sm border border-slate-200 dark:border-slate-800 hover:shadow-md transition-all group">
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
-                                    <User className="w-6 h-6" />
-                                </div>
-                                <div className="flex gap-2">
-                                    <button 
-                                        onClick={() => handleOpenModal(user)}
-                                        className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 hover:text-indigo-600 transition-colors"
-                                    >
-                                        <Edit2 className="w-4 h-4" />
-                                    </button>
-                                    <button 
-                                        onClick={() => handleDelete(user.id)}
-                                        className="p-2 hover:bg-red-500/10 rounded-lg text-slate-400 hover:text-red-600 transition-colors"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </div>
-                            <h3 className="text-lg font-bold text-slate-800 dark:text-white">{user.name}</h3>
-                            <div className="flex items-center gap-2 text-sm text-slate-500 mt-1 mb-4">
-                                <Mail className="w-3.5 h-3.5" />
-                                {user.email}
-                            </div>
-                            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center">
-                                <div className="flex items-center gap-2">
-                                    <Shield className="w-3.5 h-3.5 text-indigo-500" />
-                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Role</span>
-                                </div>
-                                <Badge variant="primary">{user.roles[0]?.name || 'No Role'}</Badge>
-                            </div>
-                        </div>
-                    ))
-                )}
-            </div>
+            <DataTable 
+                columns={columns} 
+                data={users} 
+                isLoading={loading}
+                searchPlaceholder="Cari staff..."
+                exportFileName="daftar-staff"
+                actions={
+                    <div className="flex gap-2">
+                        <button 
+                            onClick={() => handleOpenModal()}
+                            className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-bold transition-all shadow-lg shadow-indigo-500/20 active:scale-95"
+                        >
+                            <Plus className="w-4 h-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Tambah Staff</span>
+                        </button>
+                    </div>
+                }
+            />
 
             {/* User Modal */}
             {showModal && (
-                <div className="fixed inset-0 z-999 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white dark:bg-slate-900 rounded-sm shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                            <h3 className="font-bold text-slate-800 dark:text-white">{editingUser ? 'Edit Staff' : 'New Staff'}</h3>
-                            <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-slate-900 rounded-sm shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-800">
+                        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/20">
+                            <h3 className="font-bold text-slate-800 dark:text-white">
+                                {editingUser ? 'Edit Data Staff' : 'Tambah Staff Baru'}
+                            </h3>
+                            <button 
+                                onClick={() => setShowModal(false)} 
+                                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                            >
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Full Name</label>
+                            <div className="space-y-1">
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Nama Lengkap</label>
                                 <input 
                                     type="text"
                                     required
-                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-4 py-2.5 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-4 py-2.5 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
                                     value={formData.name}
                                     onChange={e => setFormData({...formData, name: e.target.value})}
-                                    placeholder="John Doe"
+                                    placeholder="contoh: John Doe"
                                 />
                             </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Email Address</label>
+                            <div className="space-y-1">
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Alamat Email</label>
                                 <input 
                                     type="email"
                                     required
-                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-4 py-2.5 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-4 py-2.5 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
                                     value={formData.email}
                                     onChange={e => setFormData({...formData, email: e.target.value})}
                                     placeholder="staff@minisp.com"
                                 />
                             </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Role</label>
+                            <div className="space-y-1">
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Role / Hak Akses</label>
                                 <select 
                                     required
-                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-4 py-2.5 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-4 py-2.5 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer"
                                     value={formData.role}
                                     onChange={e => setFormData({...formData, role: e.target.value})}
                                 >
-                                    <option value="">Select Role...</option>
+                                    <option value="">Pilih Role...</option>
                                     {roles.map(role => (
-                                        <option key={role.id} value={role.name}>{role.name}</option>
+                                        <option key={role.id} value={role.name}>{role.name.toUpperCase()}</option>
                                     ))}
                                 </select>
                             </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                                    {editingUser ? 'New Password (Optional)' : 'Password'}
+                            <div className="space-y-1">
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                    {editingUser ? 'Password Baru (Opsional)' : 'Password Akun'}
                                 </label>
                                 <div className="relative">
                                     <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                     <input 
                                         type="password"
                                         required={!editingUser}
-                                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-10 pr-4 py-2.5 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-10 pr-4 py-2.5 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
                                         value={formData.password}
                                         onChange={e => setFormData({...formData, password: e.target.value})}
                                         placeholder="••••••••"
                                     />
                                 </div>
                             </div>
-                            <div className="pt-4">
+                            <div className="pt-2">
                                 <button 
                                     type="submit"
                                     className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-sm shadow-lg shadow-indigo-500/20 transition-all active:scale-95"
                                 >
-                                    {editingUser ? 'Update Staff' : 'Create Staff'}
+                                    {editingUser ? 'Perbarui Staff' : 'Daftarkan Staff'}
                                 </button>
                             </div>
                         </form>
