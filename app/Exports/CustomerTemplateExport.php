@@ -15,6 +15,7 @@ class CustomerTemplateExport implements FromCollection, WithHeadings, WithStyles
             [
                 'kode_pelanggan' => '',
                 'nama' => 'Contoh Pelanggan',
+                'email' => 'pelanggan@contoh.com',
                 'alamat' => 'Jl. Contoh No. 123',
                 'telepon' => '08123456789',
                 'pppoe_user' => 'user@mikrotik',
@@ -32,6 +33,7 @@ class CustomerTemplateExport implements FromCollection, WithHeadings, WithStyles
         return [
             'kode_pelanggan',
             'nama',
+            'email',
             'alamat',
             'telepon',
             'pppoe_user',

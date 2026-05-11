@@ -18,11 +18,31 @@ class CustomerImport implements ToModel, WithHeadingRow, WithValidation
             $package = MonthlyPackage::where('name', 'like', '%' . $row['paket'] . '%')->first();
         }
 
+        $customerCode = $row['kode_pelanggan'] ?? $this->generateCode();
+        $email = $row['email'] ?? ($customerCode . '@minisp.net');
+        $name = $row['nama'];
+        $phone = $row['telepon'] ?? null;
+
+        // Check if user already exists
+        $user = \App\Models\User::where('email', $email)->first();
+        if (!$user) {
+            $user = \App\Models\User::create([
+                'name' => $name,
+                'email' => $email,
+                'password' => \Illuminate\Support\Facades\Hash::make($phone ?? '123456'),
+            ]);
+            
+            $role = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'customer', 'guard_name' => 'api']);
+            $user->assignRole($role);
+        }
+
         return new Customer([
-            'customer_code'      => $row['kode_pelanggan'] ?? $this->generateCode(),
-            'name'               => $row['nama'],
+            'user_id'            => $user->id,
+            'customer_code'      => $customerCode,
+            'name'               => $name,
+            'email'              => $row['email'] ?? null,
             'address'            => $row['alamat'] ?? null,
-            'phone'              => $row['telepon'] ?? null,
+            'phone'              => $phone,
             'pppoe_user'         => $row['pppoe_user'] ?? null,
             'monthly_package_id' => $package ? $package->id : ($row['package_id'] ?? null),
             'installation_fee'   => $row['biaya_pemasangan'] ?? 0,
