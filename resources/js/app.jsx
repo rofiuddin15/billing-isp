@@ -24,6 +24,7 @@ import UserList from './pages/users/UserList';
 import RoleManagement from './pages/users/RoleManagement';
 import VoucherPackageList from './pages/packages/VoucherPackageList';
 import Settings from './pages/Settings';
+import AuditTrail from './pages/system/AuditTrail';
 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -54,6 +55,7 @@ root.render(
                     <Route path="master/voucher-packages" element={<VoucherPackageList />} />
                     <Route path="master/transaction-categories" element={<TransactionCategoryList />} />
                     <Route path="settings" element={<Settings />} />
+                    <Route path="system/logs" element={<AuditTrail />} />
                 </Route>
             </Routes>
         </BrowserRouter>

@@ -60,6 +60,8 @@ Route::group(['middleware' => 'auth:api'], function() {
 
     Route::get('settings', [\App\Http\Controllers\Api\AppSettingController::class, 'index']);
     Route::post('settings', [\App\Http\Controllers\Api\AppSettingController::class, 'store']);
+
+    Route::get('activity-logs', [\App\Http\Controllers\Api\ActivityLogController::class, 'index']);
 });
 
 Route::get('/user', function (Request $request) {

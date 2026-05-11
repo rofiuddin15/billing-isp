@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\CashFlow;
+use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -53,6 +54,12 @@ class CashFlowController extends Controller
             // Record to Ledger
             $this->accounting->recordCashFlow($cashFlow);
 
+            ActivityLog::log(
+                $cashFlow->type === 'income' ? "Catat Pendapatan" : "Catat Pengeluaran", 
+                "Kas", 
+                "Staff mencatat " . ($cashFlow->type === 'income' ? 'pendapatan' : 'pengeluaran') . " baru senilai Rp " . number_format($cashFlow->amount) . " untuk: {$cashFlow->description}."
+            );
+
             return response()->json($cashFlow->load('category'), 201);
         });
     }
@@ -75,7 +82,17 @@ class CashFlowController extends Controller
 
     public function destroy(CashFlow $cashFlow)
     {
+        $desc = $cashFlow->description;
+        $amount = $cashFlow->amount;
+        $type = $cashFlow->type;
         $cashFlow->delete();
+
+        ActivityLog::log(
+            "Hapus Transaksi Kas", 
+            "Kas", 
+            "Staff menghapus transaksi " . ($type === 'income' ? 'pendapatan' : 'pengeluaran') . " senilai Rp " . number_format($amount) . " ({$desc})."
+        );
+
         return response()->json(null, 204);
     }
 }

@@ -23,6 +23,7 @@ import apiFetch from '../../utils/api';
 import Badge from '../../components/Badge';
 import MapPicker from '../../components/MapPicker';
 import { toast } from 'react-toastify';
+import ReceiptService from '../../utils/ReceiptService';
 
 const CustomerDetail = () => {
     const { id } = useParams();
@@ -264,8 +265,16 @@ const CustomerDetail = () => {
                                                         </button>
                                                     )}
                                                     {inv.status === 'paid' && (
-                                                        <div className="flex items-center justify-end gap-2 text-emerald-500 font-black text-[10px] uppercase tracking-widest">
-                                                            <CheckCircle className="w-5 h-5" /> TERBAYAR
+                                                        <div className="flex items-center justify-end gap-3">
+                                                            <button 
+                                                                onClick={() => ReceiptService.generatePaymentReceipt(inv, customer)}
+                                                                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm active:scale-95"
+                                                            >
+                                                                <Download className="w-3.5 h-3.5 text-indigo-600" /> Cetak Struk
+                                                            </button>
+                                                            <div className="flex items-center gap-2 text-emerald-500 font-black text-[10px] uppercase tracking-widest">
+                                                                <CheckCircle className="w-5 h-5" /> TERBAYAR
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </td>

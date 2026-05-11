@@ -43,9 +43,12 @@ const CustomerList = () => {
     const [unpaidInvoices, setUnpaidInvoices] = useState([]);
     const [payLoading, setPayLoading] = useState(false);
     const [payingInvoice, setPayingInvoice] = useState(null);
+    const [appSettings, setAppSettings] = useState({});
+    const [paymentSuccess, setPaymentSuccess] = useState(false);
 
     useEffect(() => {
         dispatch(fetchCustomers({ page: 1 }));
+        apiFetch('/api/settings').then(res => setAppSettings(res)).catch(err => console.error(err));
     }, [dispatch]);
 
     const handleSearch = (val) => {
@@ -98,6 +101,7 @@ const CustomerList = () => {
         setPayLoading(true);
         setShowPayModal(true);
         setPayingInvoice(null);
+        setPaymentSuccess(false);
         apiFetch(`/api/payments?customer_id=${customer.id}&status=unpaid`)
             .then(res => setUnpaidInvoices(res.data))
             .catch(err => toast.error(err.message))
@@ -108,8 +112,10 @@ const CustomerList = () => {
         if (!payingInvoice) return;
         setPayLoading(true);
         try {
-            await apiFetch(`/api/payments/${payingInvoice.id}/pay`, { method: 'POST' });
+            const paidInvoice = await apiFetch(`/api/payments/${payingInvoice.id}/pay`, { method: 'POST' });
             toast.success('Pembayaran berhasil dicatat');
+            setPaymentSuccess(true);
+            setPayingInvoice(paidInvoice); // Update with full data from server (including confirmed_by)
             // Refresh unpaid invoices
             const res = await apiFetch(`/api/payments?customer_id=${selectedCustomer.id}&status=unpaid`);
             setUnpaidInvoices(res.data);
@@ -364,19 +370,34 @@ const CustomerList = () => {
                                         </div>
 
                                         <div className="pt-4 flex gap-3">
-                                            <button 
-                                                onClick={() => setPayingInvoice(null)}
-                                                className="flex-1 py-3 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-bold rounded-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
-                                            >
-                                                Kembali
-                                            </button>
-                                            <button 
-                                                onClick={handlePayInvoice}
-                                                disabled={payLoading}
-                                                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-sm shadow-lg shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50"
-                                            >
-                                                {payLoading ? 'Memproses...' : 'Bayar Sekarang'}
-                                            </button>
+                                            {paymentSuccess ? (
+                                                <button 
+                                                    onClick={() => {
+                                                        import('../../utils/ReceiptService').then(m => {
+                                                            m.default.generatePaymentReceipt(payingInvoice, selectedCustomer, appSettings);
+                                                        });
+                                                    }}
+                                                    className="flex-1 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-widest rounded-sm shadow-xl shadow-indigo-600/20 transition-all active:scale-95 flex items-center justify-center gap-3"
+                                                >
+                                                    <Download className="w-5 h-5" /> Cetak Struk Pembayaran
+                                                </button>
+                                            ) : (
+                                                <>
+                                                    <button 
+                                                        onClick={() => setPayingInvoice(null)}
+                                                        className="flex-1 py-3 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-bold rounded-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+                                                    >
+                                                        Kembali
+                                                    </button>
+                                                    <button 
+                                                        onClick={handlePayInvoice}
+                                                        disabled={payLoading}
+                                                        className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-sm shadow-lg shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50"
+                                                    >
+                                                        {payLoading ? 'Memproses...' : 'Bayar Sekarang'}
+                                                    </button>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                 ) : unpaidInvoices.length === 0 ? (

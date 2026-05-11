@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
+use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 
 class CustomerController extends Controller
@@ -78,6 +79,12 @@ class CustomerController extends Controller
             ]);
         }
 
+        ActivityLog::log(
+            "Pendaftaran Pelanggan", 
+            "Pelanggan", 
+            "Staff mendaftarkan pelanggan baru: {$customer->name} ({$customer->customer_code})."
+        );
+
         return response()->json($customer, 201);
     }
 
@@ -114,12 +121,28 @@ class CustomerController extends Controller
         ]);
 
         $customer->update($validated);
+
+        ActivityLog::log(
+            "Pembaruan Data Pelanggan", 
+            "Pelanggan", 
+            "Staff memperbarui data pelanggan: {$customer->name} ({$customer->customer_code})."
+        );
+
         return response()->json($customer);
     }
 
     public function destroy(Customer $customer)
     {
+        $customerName = $customer->name;
+        $customerCode = $customer->customer_code;
         $customer->delete();
+
+        ActivityLog::log(
+            "Penghapusan Pelanggan", 
+            "Pelanggan", 
+            "Staff menghapus data pelanggan: {$customerName} ({$customerCode})."
+        );
+
         return response()->json(null, 204);
     }
 
@@ -131,6 +154,13 @@ class CustomerController extends Controller
 
         try {
             \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\CustomerImport, $request->file('file'));
+            
+            ActivityLog::log(
+                "Import Data Pelanggan", 
+                "Pelanggan", 
+                "Staff melakukan import data pelanggan secara massal melalui file."
+            );
+
             return response()->json(['message' => 'Data pelanggan berhasil diimport']);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Gagal mengimport data: ' . $e->getMessage()], 422);

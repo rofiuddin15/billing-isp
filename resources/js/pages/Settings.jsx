@@ -97,6 +97,46 @@ const Settings = () => {
                     </div>
                 </div>
 
+                <div className="bg-white dark:bg-slate-900 rounded-sm border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                    <div className="p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 flex items-center gap-3">
+                        <SettingsIcon className="w-5 h-5 text-indigo-600" />
+                        <h3 className="font-black text-slate-800 dark:text-white tracking-tight">Profil Perusahaan & Struk</h3>
+                    </div>
+                    <div className="p-8 space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-2">Nama Perusahaan</label>
+                                <input 
+                                    type="text"
+                                    value={settings.company_name || ''}
+                                    onChange={(e) => setSettings({ ...settings, company_name: e.target.value })}
+                                    className="w-full bg-slate-50 dark:bg-slate-950 border-0 ring-1 ring-slate-200 dark:ring-slate-800 focus:ring-2 focus:ring-indigo-500 rounded-sm px-4 py-3 text-slate-800 dark:text-white font-bold transition-all outline-none"
+                                    placeholder="Contoh: MinISP Networks"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-2">Nomor Telepon / WA</label>
+                                <input 
+                                    type="text"
+                                    value={settings.company_phone || ''}
+                                    onChange={(e) => setSettings({ ...settings, company_phone: e.target.value })}
+                                    className="w-full bg-slate-50 dark:bg-slate-950 border-0 ring-1 ring-slate-200 dark:ring-slate-800 focus:ring-2 focus:ring-indigo-500 rounded-sm px-4 py-3 text-slate-800 dark:text-white font-bold transition-all outline-none"
+                                    placeholder="Contoh: 0812-3456-7890"
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-2">Alamat Lengkap</label>
+                            <textarea 
+                                value={settings.company_address || ''}
+                                onChange={(e) => setSettings({ ...settings, company_address: e.target.value })}
+                                className="w-full bg-slate-50 dark:bg-slate-950 border-0 ring-1 ring-slate-200 dark:ring-slate-800 focus:ring-2 focus:ring-indigo-500 rounded-sm px-4 py-3 text-slate-800 dark:text-white font-bold transition-all outline-none min-h-[100px]"
+                                placeholder="Alamat yang akan muncul di header struk pembayaran..."
+                            />
+                        </div>
+                    </div>
+                </div>
+
                 <div className="flex justify-end">
                     <button 
                         type="submit"

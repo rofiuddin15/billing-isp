@@ -36,6 +36,7 @@ class DatabaseSeeder extends Seeder
             VoucherPackageSeeder::class,
             MenuPermissionSeeder::class,
             RoleCleanupSeeder::class,
+            AppSettingSeeder::class,
         ]);
     }
 }

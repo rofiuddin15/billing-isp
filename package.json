@@ -21,6 +21,8 @@
         "@vitejs/plugin-react": "^4.7.0",
         "clsx": "^2.1.1",
         "file-saver": "^2.0.5",
+        "jspdf": "^4.2.1",
+        "jspdf-autotable": "^5.0.7",
         "lucide-react": "^1.14.0",
         "mapbox-gl": "^3.23.0",
         "papaparse": "^5.5.3",

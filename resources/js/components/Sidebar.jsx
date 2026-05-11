@@ -85,6 +85,7 @@ const Sidebar = () => {
                 { icon: MessageCircle, label: 'Obrolan', path: '/chat', permission: 'menu.chat' },
                 { icon: UserCircle, label: 'Manajemen Staff', path: '/master/users', permission: 'menu.users' },
                 { icon: ShieldCheck, label: 'Akses & Role', path: '/master/roles', permission: 'menu.roles' },
+                { icon: FileText, label: 'Log Aktivitas', path: '/system/logs', permission: 'menu.logs' },
                 { icon: Settings, label: 'Pengaturan', path: '/settings', permission: 'menu.settings' },
             ]
         }

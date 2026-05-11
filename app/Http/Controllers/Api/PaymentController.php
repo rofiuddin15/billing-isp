@@ -10,11 +10,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 
+use App\Models\ActivityLog;
+
 class PaymentController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Payment::with('customer');
+        $query = Payment::with('customer', 'confirmedBy');
         
         if ($request->has('customer_id')) {
             $query->where('customer_id', $request->customer_id);
@@ -50,6 +52,14 @@ class PaymentController extends Controller
             }
         }
 
+        if ($count > 0) {
+            ActivityLog::log(
+                "Generasi Tagihan Bulanan", 
+                "Pembayaran", 
+                "Sistem menghasilkan {$count} tagihan baru untuk periode {$period}."
+            );
+        }
+
         return response()->json(['message' => "Successfully generated {$count} invoices for {$period}."]);
     }
 
@@ -75,6 +85,12 @@ class PaymentController extends Controller
                 'reference_id' => $payment->id,
                 'created_by' => auth('api')->id(),
             ]);
+
+            ActivityLog::log(
+                "Pembayaran Tagihan", 
+                "Pembayaran", 
+                "Staff mengkonfirmasi pembayaran tagihan {$payment->invoice_number} senilai Rp " . number_format($payment->amount) . " untuk pelanggan {$payment->customer->name}."
+            );
 
             return response()->json($payment->load('customer'));
         });
