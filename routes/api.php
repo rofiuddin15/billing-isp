@@ -71,7 +71,7 @@ Route::group(['middleware' => 'auth:api'], function() {
     Route::apiResource('payments', PaymentController::class);
 
     Route::get('settings', [\App\Http\Controllers\Api\AppSettingController::class, 'index']);
-    Route::post('settings', [\App\Http\Controllers\Api\AppSettingController::class, 'store']);
+    Route::post('settings', [\App\Http\Controllers\Api\AppSettingController::class, 'update']);
 
     Route::get('activity-logs', [\App\Http\Controllers\Api\ActivityLogController::class, 'index']);
     
