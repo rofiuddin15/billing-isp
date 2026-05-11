@@ -45,7 +45,6 @@ class CustomerImport implements ToModel, WithHeadingRow, WithValidation
             'phone'              => $phone,
             'pppoe_user'         => $row['pppoe_user'] ?? null,
             'monthly_package_id' => $package ? $package->id : ($row['package_id'] ?? null),
-            'installation_fee'   => $row['biaya_pemasangan'] ?? 0,
             'status'             => $this->mapStatus($row['status'] ?? 'active'),
             'latitude'           => $row['latitude'] ?? null,
             'longitude'          => $row['longitude'] ?? null,

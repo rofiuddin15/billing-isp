@@ -20,7 +20,6 @@ class CustomerTemplateExport implements FromCollection, WithHeadings, WithStyles
                 'telepon' => '08123456789',
                 'pppoe_user' => 'user@mikrotik',
                 'paket' => 'Paket Dasar',
-                'biaya_pemasangan' => '500000',
                 'status' => 'aktif',
                 'latitude' => '-6.200000',
                 'longitude' => '106.816666'
@@ -38,7 +37,6 @@ class CustomerTemplateExport implements FromCollection, WithHeadings, WithStyles
             'telepon',
             'pppoe_user',
             'paket',
-            'biaya_pemasangan',
             'status',
             'latitude',
             'longitude'
