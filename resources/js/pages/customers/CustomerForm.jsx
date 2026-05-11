@@ -13,11 +13,11 @@ import MapPicker from '../../components/MapPicker';
 const schema = z.object({
     customer_code: z.string().optional(),
     name: z.string().min(3),
+    email: z.string().email().optional().or(z.literal('')),
     address: z.string().optional(),
     phone: z.string().optional(),
     pppoe_user: z.string().optional(),
     monthly_package_id: z.coerce.number().min(1),
-    installation_fee: z.coerce.number().min(0).default(0),
     status: z.enum(['active', 'isolir', 'non-active']),
     latitude: z.coerce.number().optional().nullable(),
     longitude: z.coerce.number().optional().nullable(),
@@ -115,6 +115,16 @@ const CustomerForm = () => {
                                 {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
                             </div>
                             <div className="space-y-2">
+                                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 block">Email (Opsional)</label>
+                                <input 
+                                    {...register('email')}
+                                    type="email"
+                                    className="w-full bg-slate-50 dark:bg-slate-950 border-0 ring-1 ring-slate-200 dark:ring-slate-800 focus:ring-2 focus:ring-indigo-500 rounded-sm px-4 py-3 text-slate-800 dark:text-white placeholder:text-slate-400 transition-all outline-none"
+                                    placeholder="email@contoh.com"
+                                />
+                                {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
+                            </div>
+                            <div className="space-y-2">
                                 <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 block">Nomor Telepon</label>
                                 <input 
                                     {...register('phone')}
@@ -157,18 +167,6 @@ const CustomerForm = () => {
                 <div className="space-y-8">
                     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-8 space-y-6 shadow-sm">
                         <div className="space-y-4">
-                            {!id && (
-                                <div>
-                                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 block">Biaya Pemasangan</label>
-                                    <input 
-                                        type="number"
-                                        {...register('installation_fee')}
-                                        className="w-full bg-slate-50 dark:bg-slate-950 border-0 ring-1 ring-slate-200 dark:ring-slate-800 focus:ring-2 focus:ring-indigo-500 rounded-sm px-4 py-3 text-slate-800 dark:text-white placeholder:text-slate-400 transition-all outline-none"
-                                        placeholder="Contoh: 500000"
-                                    />
-                                    {errors.installation_fee && <p className="text-xs text-red-500">{errors.installation_fee.message}</p>}
-                                </div>
-                            )}
                             <div>
                                 <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 block">Paket Bulanan</label>
                                 <select 

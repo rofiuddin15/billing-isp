@@ -90,6 +90,16 @@ class AuthController extends Controller
             $taxAmount = ($taxRate / 100) * $subtotal;
             $totalAmount = $subtotal + $taxAmount;
 
+            if ($totalAmount > 0) {
+                \App\Models\Payment::create([
+                    'customer_id' => $customer->id,
+                    'invoice_number' => 'INV-REG-' . strtoupper(\Illuminate\Support\Str::random(8)),
+                    'period' => 'REGISTRATION',
+                    'amount' => $totalAmount,
+                    'status' => 'unpaid',
+                ]);
+            }
+
             // Return customer and package info for the receipt
             return response()->json([
                 'message' => 'Registration successful',

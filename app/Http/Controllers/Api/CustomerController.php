@@ -46,6 +46,7 @@ class CustomerController extends Controller
     {
         $request->validate([
             'name' => 'required',
+            'email' => 'nullable|email',
             'monthly_package_id' => 'required|exists:monthly_packages,id',
             'status' => 'required|in:active,isolir,non-active',
         ]);
@@ -63,30 +64,55 @@ class CustomerController extends Controller
 
         $customerCode = str_pad($nextNumber, 3, '0', STR_PAD_LEFT) . $datePrefix;
 
-        $data = $request->all();
-        $data['customer_code'] = $customerCode;
-
-        $customer = Customer::create($data);
-
-        // Generate installation invoice if installation_fee is set in settings or request
-        $settingInstallationFee = (float) \App\Models\AppSetting::get('registration_installation_fee', 0);
-        $installationFee = $customer->installation_fee ?? $settingInstallationFee;
-
-        if ($installationFee > 0) {
-            \App\Models\Payment::create([
-                'customer_id' => $customer->id,
-                'invoice_number' => 'INV-INST-' . strtoupper(\Illuminate\Support\Str::random(8)),
-                'period' => 'INSTALLATION',
-                'amount' => $installationFee,
-                'status' => 'unpaid',
+        return \Illuminate\Support\Facades\DB::transaction(function() use ($request, $customerCode) {
+            // Create User first for login access
+            $email = $request->email ?? ($customerCode . '@minisp.net');
+            
+            $user = \App\Models\User::create([
+                'name' => $request->name,
+                'email' => $email,
+                'password' => \Illuminate\Support\Facades\Hash::make($request->phone ?? '123456'),
             ]);
-        }
 
-        ActivityLog::log(
-            "Pendaftaran Pelanggan", 
-            "Pelanggan", 
-            "Staff mendaftarkan pelanggan baru: {$customer->name} ({$customer->customer_code})."
-        );
+            // Assign customer role
+            $role = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'customer', 'guard_name' => 'api']);
+            $user->assignRole($role);
+
+            $data = $request->all();
+            $data['customer_code'] = $customerCode;
+            $data['user_id'] = $user->id;
+
+            $customer = Customer::create($data);
+
+            // Get Finance Settings
+            $package = \App\Models\MonthlyPackage::find($customer->monthly_package_id);
+            $installationFee = (float) \App\Models\AppSetting::get('registration_installation_fee', 0);
+            $taxRate = (float) \App\Models\AppSetting::get('registration_tax_rate', 0);
+            $adminFee = (float) \App\Models\AppSetting::get('registration_admin_fee', 0);
+            $discount = (float) \App\Models\AppSetting::get('registration_discount', 0);
+
+            $subtotal = $package->price + $installationFee + $adminFee - $discount;
+            $taxAmount = ($taxRate / 100) * $subtotal;
+            $totalAmount = $subtotal + $taxAmount;
+
+            if ($totalAmount > 0) {
+                \App\Models\Payment::create([
+                    'customer_id' => $customer->id,
+                    'invoice_number' => 'INV-REG-' . strtoupper(\Illuminate\Support\Str::random(8)),
+                    'period' => 'REGISTRATION',
+                    'amount' => $totalAmount,
+                    'status' => 'unpaid',
+                ]);
+            }
+
+            ActivityLog::log(
+                "Pendaftaran Pelanggan", 
+                "Pelanggan", 
+                "Staff mendaftarkan pelanggan baru: {$customer->name} ({$customer->customer_code})."
+            );
+
+            return $customer;
+        });
 
         return response()->json($customer, 201);
     }
