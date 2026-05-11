@@ -57,7 +57,7 @@ const Settings = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-slate-900 rounded-sm border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                     <div className="p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 flex items-center gap-3">
                         <Calendar className="w-5 h-5 text-indigo-600" />
                         <h3 className="font-black text-slate-800 dark:text-white tracking-tight">Penagihan & Jatuh Tempo</h3>
@@ -70,7 +70,7 @@ const Settings = () => {
                                     <select 
                                         value={settings.due_date_day}
                                         onChange={(e) => setSettings({ ...settings, due_date_day: e.target.value })}
-                                        className="w-full bg-slate-50 dark:bg-slate-950 border-0 ring-1 ring-slate-200 dark:ring-slate-800 focus:ring-2 focus:ring-indigo-500 rounded-xl px-4 py-3.5 text-slate-800 dark:text-white font-bold transition-all outline-none appearance-none"
+                                        className="w-full bg-slate-50 dark:bg-slate-950 border-0 ring-1 ring-slate-200 dark:ring-slate-800 focus:ring-2 focus:ring-indigo-500 rounded-sm px-4 py-3.5 text-slate-800 dark:text-white font-bold transition-all outline-none appearance-none"
                                     >
                                         {[...Array(31)].map((_, i) => (
                                             <option key={i + 1} value={i + 1}>Tanggal {i + 1}</option>
@@ -84,7 +84,7 @@ const Settings = () => {
                                 </p>
                             </div>
                             
-                            <div className="bg-indigo-50 dark:bg-indigo-500/5 p-6 rounded-2xl border border-indigo-100 dark:border-indigo-500/10">
+                            <div className="bg-indigo-50 dark:bg-indigo-500/5 p-6 rounded-sm border border-indigo-100 dark:border-indigo-500/10">
                                 <h4 className="text-xs font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                                     <ShieldCheck className="w-4 h-4" /> Referensi Sistem
                                 </h4>
@@ -101,7 +101,7 @@ const Settings = () => {
                     <button 
                         type="submit"
                         disabled={saving}
-                        className="flex items-center gap-2 px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all shadow-xl shadow-indigo-600/20 active:scale-95 disabled:opacity-50"
+                        className="flex items-center gap-2 px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-xs font-black uppercase tracking-[0.2em] transition-all shadow-xl shadow-indigo-600/20 active:scale-95 disabled:opacity-50"
                     >
                         {saving ? 'Menyimpan...' : (
                             <>

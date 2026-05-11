@@ -10,8 +10,8 @@ import apiFetch from '../utils/api';
 import { toast } from 'react-toastify';
 
 const schema = z.object({
-    email: z.string().email('Please enter a valid email'),
-    password: z.string().min(6, 'Password must be at least 6 characters'),
+    email: z.string().email('Masukkan alamat email yang valid'),
+    password: z.string().min(6, 'Password minimal harus 6 karakter'),
 });
 
 const LoginPage = () => {
@@ -30,10 +30,14 @@ const LoginPage = () => {
                 body: JSON.stringify(data),
             });
             dispatch(setCredentials(response));
-            toast.success('Welcome to MinISP!');
+            toast.success('Selamat Datang di MinISP!');
             navigate('/');
         } catch (error) {
-            toast.error(error.message || 'Login failed');
+            console.error('Login error:', error);
+            const message = error.message === 'Unauthorized' 
+                ? 'Email atau password yang Anda masukkan salah.' 
+                : (error.message || 'Gagal masuk ke sistem. Silakan coba lagi.');
+            toast.error(message);
         }
     };
 
@@ -45,115 +49,94 @@ const LoginPage = () => {
                     <div className="mb-10">
                         <Link to="/" className="flex items-center text-sm font-medium text-slate-500 hover:text-indigo-600 transition-colors">
                             <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to dashboard
+                            Kembali ke Dashboard
                         </Link>
                     </div>
 
                     <div>
                         <h2 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                            Sign In
+                            Masuk
                         </h2>
-                        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                            Enter your email and password to sign in!
+                        <h3 className="text-xl font-bold text-indigo-600 mt-1 italic">MinISP System</h3>
+                        <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+                            Masukkan email dan password Anda untuk masuk ke sistem manajemen RT-RW Net.
                         </p>
                     </div>
 
                     <div className="mt-8">
-                        <div className="grid grid-cols-2 gap-4">
-                            <button className="flex w-full items-center justify-center gap-3 rounded-xl bg-slate-50 dark:bg-slate-900 px-3 py-3 text-sm font-semibold text-slate-900 dark:text-white border border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
-                                <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="h-5 w-5" alt="Google" />
-                                <span className="hidden sm:inline">Sign in with Google</span>
-                                <span className="sm:hidden">Google</span>
-                            </button>
-                            <button className="flex w-full items-center justify-center gap-3 rounded-xl bg-slate-50 dark:bg-slate-900 px-3 py-3 text-sm font-semibold text-slate-900 dark:text-white border border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
-                                <img src="https://www.svgrepo.com/show/513008/x.svg" className="h-5 w-5 dark:invert" alt="X" />
-                                <span className="hidden sm:inline">Sign in with X</span>
-                                <span className="sm:hidden">X</span>
-                            </button>
-                        </div>
-
-                        <div className="relative my-8">
-                            <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                                <div className="w-full border-t border-slate-200 dark:border-slate-800"></div>
-                            </div>
-                            <div className="relative flex justify-center text-sm">
-                                <span className="bg-white dark:bg-slate-950 px-2 text-slate-500 font-medium uppercase tracking-widest">Or</span>
-                            </div>
-                        </div>
-
                         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                            <div>
-                                <label className="block text-sm font-bold text-slate-900 dark:text-white">
-                                    Email<span className="text-red-500">*</span>
+                            <div className="space-y-2">
+                                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest ml-1">
+                                    Alamat Email<span className="text-red-500">*</span>
                                 </label>
                                 <div className="mt-2">
                                     <input
                                         {...register('email')}
                                         type="email"
-                                        placeholder="info@gmail.com"
-                                        className="block w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-3.5 text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm transition-all outline-none"
+                                        placeholder="admin@minisp.com"
+                                        className="block w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 px-4 py-4 text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 sm:text-sm transition-all outline-none shadow-inner"
                                     />
-                                    {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
+                                    {errors.email && <p className="mt-2 text-xs font-bold text-rose-500 ml-1">{errors.email.message}</p>}
                                 </div>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-bold text-slate-900 dark:text-white">
+                            <div className="space-y-2">
+                                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest ml-1">
                                     Password<span className="text-red-500">*</span>
                                 </label>
                                 <div className="mt-2 relative">
                                     <input
                                         {...register('password')}
                                         type={showPassword ? 'text' : 'password'}
-                                        placeholder="Enter your password"
-                                        className="block w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-3.5 text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm transition-all outline-none"
+                                        placeholder="Masukkan password Anda"
+                                        className="block w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 px-4 py-4 text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 sm:text-sm transition-all outline-none shadow-inner"
                                     />
                                     <button 
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 dark:hover:text-slate-200 transition-colors"
                                     >
-                                        <Eye className="h-4 w-4" />
+                                        <Eye className="h-5 w-5" />
                                     </button>
-                                    {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
+                                    {errors.password && <p className="mt-2 text-xs font-bold text-rose-500 ml-1">{errors.password.message}</p>}
                                 </div>
                             </div>
 
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between px-1">
                                 <div className="flex items-center">
                                     <input
                                         id="remember-me"
                                         name="remember-me"
                                         type="checkbox"
-                                        className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                        className="h-4 w-4 rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                                     />
-                                    <label htmlFor="remember-me" className="ml-2 block text-sm font-medium text-slate-700 dark:text-slate-400">
-                                        Keep me logged in
+                                    <label htmlFor="remember-me" className="ml-2 block text-xs font-bold text-slate-500 dark:text-slate-400 cursor-pointer uppercase tracking-wider">
+                                        Ingat saya
                                     </label>
                                 </div>
 
-                                <div className="text-sm">
-                                    <a href="#" className="font-bold text-indigo-600 hover:text-indigo-500">
-                                        Forgot password?
+                                <div className="text-xs">
+                                    <a href="#" className="font-black text-indigo-600 hover:text-indigo-500 uppercase tracking-wider">
+                                        Lupa Password?
                                     </a>
                                 </div>
                             </div>
 
-                            <div>
+                            <div className="pt-2">
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="flex w-full justify-center rounded-xl bg-indigo-600 px-4 py-4 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-all active:scale-[0.98] disabled:opacity-50"
+                                    className="flex w-full justify-center rounded-2xl bg-indigo-600 px-4 py-4 text-sm font-black text-white uppercase tracking-widest shadow-xl shadow-indigo-600/20 hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-all active:scale-[0.98] disabled:opacity-50"
                                 >
-                                    {isSubmitting ? 'Signing in...' : 'Sign In'}
+                                    {isSubmitting ? 'Memproses...' : 'Masuk Sekarang'}
                                 </button>
                             </div>
                         </form>
 
-                        <p className="mt-8 text-center text-sm text-slate-500">
-                            Don't have an account?{' '}
-                            <Link to="/register" className="font-bold text-indigo-600 hover:text-indigo-500">
-                                Sign Up
+                        <p className="mt-10 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">
+                            Belum punya akun?{' '}
+                            <Link to="/register" className="font-black text-indigo-600 hover:text-indigo-500 ml-1">
+                                Daftar Gratis
                             </Link>
                         </p>
                     </div>
@@ -161,25 +144,39 @@ const LoginPage = () => {
             </div>
 
             {/* Right Side: Branding */}
-            <div className="relative hidden w-0 flex-1 lg:block bg-indigo-950 overflow-hidden">
-                {/* Background Pattern */}
-                <div className="absolute inset-0 opacity-10 pointer-events-none" 
-                     style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }}>
+            <div className="relative hidden w-0 flex-1 lg:block bg-slate-950 overflow-hidden">
+                {/* Visual Decorative elements */}
+                <div className="absolute inset-0 z-0 overflow-hidden">
+                    <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-600/20 blur-[120px]"></div>
+                    <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-600/20 blur-[120px]"></div>
                 </div>
                 
                 <div className="flex h-full flex-col items-center justify-center p-12 text-white relative z-10">
-                    <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-indigo-600 mb-8 shadow-2xl animate-bounce-slow">
+                    <div className="flex h-28 w-28 items-center justify-center rounded-[2rem] bg-gradient-to-br from-indigo-500 to-indigo-700 mb-10 shadow-2xl shadow-indigo-500/40 transform rotate-6 hover:rotate-0 transition-transform duration-500">
                         <Package className="h-14 w-14 text-white" />
                     </div>
-                    <h1 className="text-6xl font-black tracking-tighter mb-4 bg-clip-text text-transparent bg-gradient-to-b from-white to-indigo-300">MinISP</h1>
-                    <p className="text-center text-indigo-100 text-lg max-w-md leading-relaxed font-medium">
-                        Smart & Professional Management System for your RT-RW Net Business.
+                    <h1 className="text-7xl font-black tracking-tighter mb-4 bg-clip-text text-transparent bg-gradient-to-b from-white to-slate-500">MinISP</h1>
+                    <div className="h-1 w-20 bg-indigo-600 rounded-full mb-8"></div>
+                    <p className="text-center text-slate-400 text-lg max-w-md leading-relaxed font-medium">
+                        Solusi <span className="text-white font-bold">Cerdas & Profesional</span> untuk manajemen bisnis RT-RW Net Anda.
                     </p>
+                    
+                    <div className="mt-16 grid grid-cols-2 gap-8 w-full max-w-sm">
+                        <div className="text-center p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-sm">
+                            <p className="text-3xl font-black text-white">100%</p>
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">Automated</p>
+                        </div>
+                        <div className="text-center p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-sm">
+                            <p className="text-3xl font-black text-white">Secure</p>
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">Cloud Data</p>
+                        </div>
+                    </div>
                 </div>
                 
-                {/* Decorative blobs */}
-                <div className="absolute -bottom-20 -right-20 h-64 w-64 rounded-full bg-indigo-600/20 blur-3xl"></div>
-                <div className="absolute -top-20 -left-20 h-64 w-64 rounded-full bg-indigo-400/10 blur-3xl"></div>
+                {/* Decorative Pattern */}
+                <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+                     style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }}>
+                </div>
             </div>
         </div>
     );

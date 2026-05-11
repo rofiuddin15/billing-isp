@@ -22,7 +22,7 @@ const apiFetch = async (endpoint, options = {}) => {
 
     const response = await fetch(endpoint, config);
 
-    if (response.status === 401) {
+    if (response.status === 401 && !endpoint.includes('/auth/login')) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.location.href = '/login';
@@ -31,7 +31,7 @@ const apiFetch = async (endpoint, options = {}) => {
 
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || response.statusText || 'Request failed');
+        throw new Error(errorData.message || errorData.error || response.statusText || 'Request failed');
     }
 
     if (response.status === 204) return null;

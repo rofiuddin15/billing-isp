@@ -28,7 +28,7 @@ import apiFetch from '../utils/api';
 import Badge from '../components/Badge';
 
 const DashboardCard = ({ title, value, icon: Icon, subValue, trend, colorClass, gradient }) => (
-    <div className="group bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl hover:-translate-y-1 overflow-hidden relative">
+    <div className="group bg-white dark:bg-slate-900 p-6 rounded-sm border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl hover:-translate-y-1 overflow-hidden relative">
         <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${gradient} opacity-[0.03] group-hover:opacity-[0.08] transition-opacity -mr-8 -mt-8 rounded-full`} />
         <div className="flex justify-between items-start relative z-10">
             <div>
@@ -44,7 +44,7 @@ const DashboardCard = ({ title, value, icon: Icon, subValue, trend, colorClass, 
                     <span className="text-[10px] text-slate-400 ml-1 font-medium">vs last month</span>
                 </div>
             </div>
-            <div className={`p-3.5 rounded-xl bg-gradient-to-br ${gradient} text-white shadow-lg ${colorClass} shadow-current/20`}>
+            <div className={`p-3.5 rounded-lg bg-gradient-to-br ${gradient} text-white shadow-lg ${colorClass} shadow-current/20`}>
                 <Icon className="w-5 h-5" />
             </div>
         </div>
@@ -75,7 +75,7 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {[1,2,3,4].map(i => <div key={i} className="h-32 bg-slate-200 dark:bg-slate-800 rounded-2xl"></div>)}
             </div>
-            <div className="h-96 bg-slate-200 dark:bg-slate-800 rounded-2xl"></div>
+            <div className="h-96 bg-slate-200 dark:bg-slate-800 rounded-sm"></div>
         </div>
     );
 
@@ -92,10 +92,10 @@ const Dashboard = () => {
                     <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Memantau denyut nadi finansial ISP Anda secara real-time.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl hover:bg-slate-50 transition-all shadow-sm">
+                    <button className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-sm hover:bg-slate-50 transition-all shadow-sm">
                         Ekspor Laporan
                     </button>
-                    <button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg shadow-indigo-600/20 active:scale-95">
+                    <button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-sm transition-all shadow-lg shadow-indigo-600/20 active:scale-95">
                         Transaksi Baru
                     </button>
                 </div>
@@ -138,7 +138,7 @@ const Dashboard = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Revenue Chart */}
-                <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
+                <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-8 rounded-sm border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-8 opacity-5">
                         <TrendingUp className="w-32 h-32 text-indigo-600" />
                     </div>
@@ -224,7 +224,7 @@ const Dashboard = () => {
                 </div>
 
                 {/* Recent Transactions */}
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden">
+                <div className="bg-white dark:bg-slate-900 rounded-sm border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden">
                     <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/20">
                         <div>
                             <h3 className="text-lg font-black text-slate-800 dark:text-white tracking-tight">Arus Kas</h3>
@@ -237,7 +237,7 @@ const Dashboard = () => {
                     <div className="flex-1 overflow-y-auto custom-scrollbar">
                         {data.recent_transactions.map((tx, i) => (
                             <div key={tx.id} className="p-5 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all border-b border-slate-50 dark:border-slate-800 last:border-0 group">
-                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${tx.type === 'income' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                                <div className={`w-12 h-12 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110 ${tx.type === 'income' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
                                     {tx.type === 'income' ? <ArrowUpRight className="w-6 h-6" /> : <ArrowDownRight className="w-6 h-6" />}
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -265,7 +265,7 @@ const Dashboard = () => {
                         )}
                     </div>
                     <div className="p-4 border-t border-slate-100 dark:border-slate-800">
-                        <button className="w-full py-2.5 bg-slate-50 dark:bg-slate-800 text-[11px] font-black text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 uppercase tracking-[0.2em] transition-all rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
+                        <button className="w-full py-2.5 bg-slate-50 dark:bg-slate-800 text-[11px] font-black text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 uppercase tracking-[0.2em] transition-all rounded-sm border border-dashed border-slate-200 dark:border-slate-700">
                             Lihat Riwayat Lengkap
                         </button>
                     </div>
@@ -274,7 +274,7 @@ const Dashboard = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* New Customers List */}
-                <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
+                <div className="bg-white dark:bg-slate-900 p-8 rounded-sm border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
                     <div className="flex items-center justify-between mb-8">
                         <div>
                             <h3 className="text-xl font-black text-slate-800 dark:text-white tracking-tight">Onboarding</h3>
@@ -286,7 +286,7 @@ const Dashboard = () => {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {data.recent_customers.map(cust => (
-                            <div key={cust.id} className="flex items-center gap-4 p-4 bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 rounded-2xl group cursor-pointer hover:border-indigo-200 dark:hover:border-indigo-900/50 transition-all">
+                            <div key={cust.id} className="flex items-center gap-4 p-4 bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 rounded-sm group cursor-pointer hover:border-indigo-200 dark:hover:border-indigo-900/50 transition-all">
                                 <div className="w-12 h-12 rounded-full bg-white dark:bg-slate-900 shadow-sm flex items-center justify-center text-slate-300 group-hover:text-indigo-500 transition-colors border border-slate-100 dark:border-slate-800">
                                     <Users className="w-6 h-6" />
                                 </div>
@@ -306,7 +306,7 @@ const Dashboard = () => {
                 </div>
 
                 {/* Promo Card */}
-                <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-blue-700 rounded-2xl p-10 text-white flex flex-col justify-center relative overflow-hidden shadow-2xl shadow-indigo-600/30 group">
+                <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-blue-700 rounded-sm p-10 text-white flex flex-col justify-center relative overflow-hidden shadow-2xl shadow-indigo-600/30 group">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl transition-transform group-hover:scale-150 duration-1000" />
                     <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-400/10 rounded-full -ml-24 -mb-24 blur-2xl transition-transform group-hover:-translate-x-12 duration-1000" />
                     
@@ -317,10 +317,10 @@ const Dashboard = () => {
                         <h3 className="text-3xl font-black mb-4 tracking-tight leading-tight">Tingkatkan operasional <br/>ISP Anda hari ini.</h3>
                         <p className="text-indigo-100 mb-10 max-w-xs leading-relaxed font-medium">Siap untuk meningkatkan pendapatan? Buat voucher internet kecepatan tinggi secara massal dan kelola arus kas Anda dengan mudah.</p>
                         <div className="flex items-center gap-4">
-                            <button className="px-8 py-4 bg-white text-indigo-700 font-black text-xs uppercase tracking-[0.15em] rounded-xl shadow-xl hover:bg-indigo-50 hover:shadow-indigo-900/40 transition-all active:scale-95">
+                            <button className="px-8 py-4 bg-white text-indigo-700 font-black text-xs uppercase tracking-[0.15em] rounded-sm shadow-xl hover:bg-indigo-50 hover:shadow-indigo-900/40 transition-all active:scale-95">
                                 Buat Voucher
                             </button>
-                            <button className="p-4 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-all">
+                            <button className="p-4 bg-white/10 backdrop-blur-sm rounded-sm hover:bg-white/20 transition-all">
                                 <ArrowRight className="w-5 h-5 text-white" />
                             </button>
                         </div>

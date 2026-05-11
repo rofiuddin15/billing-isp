@@ -16,7 +16,7 @@ class RoleController extends Controller
 
     public function permissions()
     {
-        return Permission::all();
+        return Permission::where('guard_name', 'api')->get();
     }
 
     public function updatePermissions(Request $request, Role $role)

@@ -257,6 +257,7 @@ const CustomerList = () => {
                 columns={columns}
                 data={customers}
                 loading={loading}
+                onRowClick={(customer) => navigate(`/customers/${customer.id}`)}
                 manualPagination={true}
                 pageCount={pagination.lastPage}
                 paginationState={{

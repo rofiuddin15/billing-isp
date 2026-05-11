@@ -39,6 +39,7 @@ const DataTable = ({
     onSearchChange,
     renderSubComponent,
     getRowCanExpand,
+    onRowClick,
     getSubRows,
 }) => {
     const [globalFilter, setGlobalFilter] = useState('');
@@ -193,7 +194,12 @@ const DataTable = ({
                                 table.getRowModel().rows.map(row => (
                                     <React.Fragment key={row.id}>
                                         <tr 
-                                            className={`hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors border-b border-slate-50 dark:border-slate-800 last:border-0 ${row.getIsExpanded() ? 'bg-slate-50/50 dark:bg-slate-800/20' : ''}`}
+                                            onClick={() => onRowClick?.(row.original)}
+                                            className={`
+                                                transition-colors border-b border-slate-50 dark:border-slate-800 last:border-0 
+                                                ${onRowClick ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30' : ''}
+                                                ${row.getIsExpanded() ? 'bg-slate-50/50 dark:bg-slate-800/20' : ''}
+                                            `}
                                         >
                                             {row.getVisibleCells().map(cell => (
                                                 <td key={cell.id} className="px-6 py-4">

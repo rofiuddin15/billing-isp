@@ -116,7 +116,7 @@ const RoleManagement = () => {
                 </div>
                 <button 
                     onClick={() => setShowNewRoleModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-sm shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
                 >
                     <Plus className="w-4 h-4" /> Tambah Role
                 </button>
@@ -132,7 +132,7 @@ const RoleManagement = () => {
                                 key={role.id}
                                 onClick={() => handleSelectRole(role)}
                                 className={`
-                                    group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all border
+                                    group flex items-center justify-between p-3 rounded-sm cursor-pointer transition-all border
                                     ${selectedRole?.id === role.id 
                                         ? 'bg-indigo-50 border-indigo-200 dark:bg-indigo-500/10 dark:border-indigo-500/30 text-indigo-700 dark:text-indigo-400' 
                                         : 'bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'}
@@ -158,7 +158,7 @@ const RoleManagement = () => {
                 {/* Permission Grid */}
                 <div className="lg:col-span-3">
                     {selectedRole ? (
-                        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col h-full">
+                        <div className="bg-white dark:bg-slate-900 rounded-sm border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col h-full">
                             <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/20">
                                 <div>
                                     <div className="flex items-center gap-2">
@@ -172,7 +172,7 @@ const RoleManagement = () => {
                                 <button 
                                     onClick={handleSavePermissions}
                                     disabled={saving || selectedRole.name === 'admin'}
-                                    className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-lg shadow-emerald-600/20 transition-all active:scale-95"
+                                    className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-wider rounded-sm shadow-lg shadow-emerald-600/20 transition-all active:scale-95"
                                 >
                                     <Save className="w-4 h-4" /> {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
                                 </button>
@@ -184,7 +184,7 @@ const RoleManagement = () => {
                                         key={perm.id}
                                         onClick={() => selectedRole.name !== 'admin' && togglePermission(perm.name)}
                                         className={`
-                                            flex items-center gap-3 p-4 rounded-xl border transition-all cursor-pointer
+                                            flex items-center gap-3 p-4 rounded-sm border transition-all cursor-pointer
                                             ${rolePermissions.includes(perm.name)
                                                 ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-500/5 dark:border-emerald-500/20 text-emerald-800 dark:text-emerald-400'
                                                 : 'bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'}
@@ -207,7 +207,7 @@ const RoleManagement = () => {
                             </div>
                             
                             {selectedRole.name === 'admin' && (
-                                <div className="mx-6 mb-6 p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl">
+                                <div className="mx-6 mb-6 p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-sm">
                                     <p className="text-xs text-amber-700 dark:text-amber-400 font-medium leading-relaxed">
                                         <strong>Catatan:</strong> Role Admin memiliki akses penuh ke semua menu secara default dan tidak dapat diubah untuk menjaga integritas sistem.
                                     </p>
@@ -215,7 +215,7 @@ const RoleManagement = () => {
                             )}
                         </div>
                     ) : (
-                        <div className="h-full flex flex-col items-center justify-center p-12 bg-slate-50/50 dark:bg-slate-800/20 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+                        <div className="h-full flex flex-col items-center justify-center p-12 bg-slate-50/50 dark:bg-slate-800/20 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-sm">
                             <Shield className="w-16 h-16 text-slate-200 mb-4" />
                             <p className="text-slate-400 font-bold">Pilih role untuk mengatur hak akses menu</p>
                         </div>
@@ -226,7 +226,7 @@ const RoleManagement = () => {
             {/* New Role Modal */}
             {showNewRoleModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-800">
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-800">
                         <div className="p-6 border-b border-slate-100 dark:border-slate-800">
                             <h3 className="text-lg font-black text-slate-800 dark:text-white tracking-tight">Tambah Role Baru</h3>
                             <p className="text-xs text-slate-500">Definisikan nama role (contoh: 'staff', 'finance')</p>
@@ -240,20 +240,20 @@ const RoleManagement = () => {
                                     value={newRoleName}
                                     onChange={e => setNewRoleName(e.target.value)}
                                     placeholder="contoh: teknisi"
-                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-4 py-3 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
                                 />
                             </div>
                             <div className="flex gap-3 pt-2">
                                 <button 
                                     type="button"
                                     onClick={() => setShowNewRoleModal(false)}
-                                    className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition-all"
+                                    className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-sm transition-all"
                                 >
                                     Batal
                                 </button>
                                 <button 
                                     type="submit"
-                                    className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
+                                    className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-sm shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
                                 >
                                     Buat Role
                                 </button>
