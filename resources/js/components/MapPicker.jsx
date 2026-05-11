@@ -60,8 +60,8 @@ const MapPicker = ({ lat, lng, onChange }) => {
             </label>
             <div ref={mapContainer} className="h-64 w-full rounded-sm border border-slate-200 dark:border-slate-800 overflow-hidden shadow-inner bg-slate-50 dark:bg-slate-900" />
             <div className="flex gap-4 text-[10px] font-mono text-slate-500">
-                <span>LAT: {lat?.toFixed(6) || 'Not set'}</span>
-                <span>LNG: {lng?.toFixed(6) || 'Not set'}</span>
+                <span>LAT: {lat ? Number(lat).toFixed(6) : 'Not set'}</span>
+                <span>LNG: {lng ? Number(lng).toFixed(6) : 'Not set'}</span>
             </div>
             <p className="text-[10px] text-amber-500 italic">Note: Drag the marker or click on map to set location.</p>
         </div>
