@@ -68,13 +68,16 @@ class CustomerController extends Controller
 
         $customer = Customer::create($data);
 
-        // Generate installation invoice if fee > 0
-        if ($customer->installation_fee > 0) {
+        // Generate installation invoice if installation_fee is set in settings or request
+        $settingInstallationFee = (float) \App\Models\AppSetting::get('registration_installation_fee', 0);
+        $installationFee = $customer->installation_fee ?? $settingInstallationFee;
+
+        if ($installationFee > 0) {
             \App\Models\Payment::create([
                 'customer_id' => $customer->id,
                 'invoice_number' => 'INV-INST-' . strtoupper(\Illuminate\Support\Str::random(8)),
                 'period' => 'INSTALLATION',
-                'amount' => $customer->installation_fee,
+                'amount' => $installationFee,
                 'status' => 'unpaid',
             ]);
         }

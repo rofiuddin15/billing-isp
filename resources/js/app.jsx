@@ -25,6 +25,9 @@ import RoleManagement from './pages/users/RoleManagement';
 import VoucherPackageList from './pages/packages/VoucherPackageList';
 import Settings from './pages/Settings';
 import AuditTrail from './pages/system/AuditTrail';
+import CustomerDashboard from './pages/CustomerDashboard';
+import FinanceSettings from './pages/finance/FinanceSettings';
+import ComplaintList from './pages/support/ComplaintList';
 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -39,6 +42,7 @@ root.render(
             <Routes>
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
+                <Route path="/customer/dashboard" element={<CustomerDashboard />} />
                 <Route path="/" element={<Layout />}>
                     <Route index element={<Dashboard />} />
                     <Route path="customers" element={<CustomerList />} />
@@ -50,10 +54,12 @@ root.render(
                     <Route path="finance" element={<CashFlowList />} />
                     <Route path="finance/coa" element={<COAList />} />
                     <Route path="finance/ledger" element={<JournalList />} />
+                    <Route path="finance/settings" element={<FinanceSettings />} />
                     <Route path="master/users" element={<UserList />} />
                     <Route path="master/roles" element={<RoleManagement />} />
                     <Route path="master/voucher-packages" element={<VoucherPackageList />} />
                     <Route path="master/transaction-categories" element={<TransactionCategoryList />} />
+                    <Route path="complaints" element={<ComplaintList />} />
                     <Route path="settings" element={<Settings />} />
                     <Route path="system/logs" element={<AuditTrail />} />
                 </Route>

@@ -23,9 +23,10 @@ class MenuPermissionSeeder extends Seeder
             'menu.finance' => 'Akses Menu Arus Kas',
             'menu.coa' => 'Akses Menu Bagan Akun',
             'menu.ledger' => 'Akses Menu Buku Besar',
+            'menu.finance_settings' => 'Akses Pengaturan Biaya Pendaftaran',
             'menu.master_vouchers' => 'Akses Data Master Paket Voucher',
             'menu.master_categories' => 'Akses Data Master Kategori Transaksi',
-            'menu.chat' => 'Akses Menu Obrolan',
+            'menu.complaints' => 'Akses Menu Aduan',
             'menu.settings' => 'Akses Menu Pengaturan',
             'menu.roles' => 'Akses Manajemen Role & Akses',
             'menu.users' => 'Akses Manajemen Staff'
@@ -34,6 +35,11 @@ class MenuPermissionSeeder extends Seeder
         $guards = ['api', 'web'];
 
         foreach ($guards as $guard) {
+            // Delete obsolete permissions
+            Permission::where('guard_name', $guard)
+                ->whereNotIn('name', array_keys($menus))
+                ->delete();
+
             foreach ($menus as $name => $description) {
                 Permission::firstOrCreate([
                     'name' => $name, 
@@ -60,5 +66,9 @@ class MenuPermissionSeeder extends Seeder
         if ($user) {
             $user->assignRole($adminRole);
         }
+
+        // Customer Role
+        $customerRole = Role::firstOrCreate(['name' => 'customer', 'guard_name' => 'api']);
+        $customerRole->syncPermissions(['menu.complaints', 'menu.dashboard']);
     }
 }

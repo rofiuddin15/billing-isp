@@ -26,6 +26,8 @@ import {
 } from 'recharts';
 import apiFetch from '../utils/api';
 import Badge from '../components/Badge';
+import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 const DashboardCard = ({ title, value, icon: Icon, subValue, trend, colorClass, gradient }) => (
     <div className="group bg-white dark:bg-slate-900 p-6 rounded-sm border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl hover:-translate-y-1 overflow-hidden relative">
@@ -52,10 +54,17 @@ const DashboardCard = ({ title, value, icon: Icon, subValue, trend, colorClass, 
 );
 
 const Dashboard = () => {
+    const { roles } = useSelector((state) => state.auth);
+    const navigate = useNavigate();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        if (roles && roles.includes('customer')) {
+            navigate('/customer/dashboard', { replace: true });
+            return;
+        }
+
         const fetchDashboardData = async () => {
             try {
                 const res = await apiFetch('/api/dashboard');

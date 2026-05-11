@@ -7,7 +7,7 @@ import {
     Wallet, 
     Package,
     Settings, 
-    MessageCircle,
+    Megaphone,
     Tag,
     Landmark,
     FileText,
@@ -70,6 +70,7 @@ const Sidebar = () => {
                 { icon: Wallet, label: 'Arus Kas', path: '/finance', permission: 'menu.finance' },
                 { icon: Landmark, label: 'Bagan Akun', path: '/finance/coa', permission: 'menu.coa' },
                 { icon: FileText, label: 'Buku Besar', path: '/finance/ledger', permission: 'menu.ledger' },
+                { icon: Wallet, label: 'Pengaturan Biaya', path: '/finance/settings', permission: 'menu.finance_settings' },
             ]
         },
         {
@@ -82,7 +83,7 @@ const Sidebar = () => {
         {
             title: 'DUKUNGAN',
             items: [
-                { icon: MessageCircle, label: 'Obrolan', path: '/chat', permission: 'menu.chat' },
+                { icon: Megaphone, label: 'Aduan', path: '/complaints', permission: 'menu.complaints' },
                 { icon: UserCircle, label: 'Manajemen Staff', path: '/master/users', permission: 'menu.users' },
                 { icon: ShieldCheck, label: 'Akses & Role', path: '/master/roles', permission: 'menu.roles' },
                 { icon: FileText, label: 'Log Aktivitas', path: '/system/logs', permission: 'menu.logs' },

@@ -10,7 +10,7 @@ import apiFetch from '../utils/api';
 import { toast } from 'react-toastify';
 
 const schema = z.object({
-    email: z.string().email('Masukkan alamat email yang valid'),
+    email: z.string().min(1, 'Masukkan email atau nomor HP Anda'),
     password: z.string().min(6, 'Password minimal harus 6 karakter'),
 });
 
@@ -31,7 +31,12 @@ const LoginPage = () => {
             });
             dispatch(setCredentials(response));
             toast.success('Selamat Datang di MinISP!');
-            navigate('/');
+            
+            if (response.roles && response.roles.includes('customer')) {
+                navigate('/customer/dashboard');
+            } else {
+                navigate('/');
+            }
         } catch (error) {
             console.error('Login error:', error);
             const message = error.message === 'Unauthorized' 
@@ -46,12 +51,6 @@ const LoginPage = () => {
             {/* Left Side: Form */}
             <div className="flex flex-1 flex-col justify-center px-8 py-12 sm:px-12 lg:px-20 xl:px-32 bg-white dark:bg-slate-950">
                 <div className="mx-auto w-full max-w-md">
-                    <div className="mb-10">
-                        <Link to="/" className="flex items-center text-sm font-medium text-slate-500 hover:text-indigo-600 transition-colors">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Kembali ke Dashboard
-                        </Link>
-                    </div>
 
                     <div>
                         <h2 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
@@ -67,14 +66,14 @@ const LoginPage = () => {
                         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                             <div className="space-y-2">
                                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest ml-1">
-                                    Alamat Email<span className="text-red-500">*</span>
+                                    Email atau Nomor HP<span className="text-red-500">*</span>
                                 </label>
                                 <div className="mt-2">
                                     <input
                                         {...register('email')}
-                                        type="email"
-                                        placeholder="admin@minisp.com"
-                                        className="block w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 px-4 py-4 text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 sm:text-sm transition-all outline-none shadow-inner"
+                                        type="text"
+                                        placeholder="email@example.com atau 0812..."
+                                        className="block w-full rounded border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 px-4 py-4 text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 sm:text-sm transition-all outline-none shadow-inner"
                                     />
                                     {errors.email && <p className="mt-2 text-xs font-bold text-rose-500 ml-1">{errors.email.message}</p>}
                                 </div>
@@ -89,7 +88,7 @@ const LoginPage = () => {
                                         {...register('password')}
                                         type={showPassword ? 'text' : 'password'}
                                         placeholder="Masukkan password Anda"
-                                        className="block w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 px-4 py-4 text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 sm:text-sm transition-all outline-none shadow-inner"
+                                        className="block w-full rounded border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 px-4 py-4 text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 sm:text-sm transition-all outline-none shadow-inner"
                                     />
                                     <button 
                                         type="button"
@@ -108,7 +107,7 @@ const LoginPage = () => {
                                         id="remember-me"
                                         name="remember-me"
                                         type="checkbox"
-                                        className="h-4 w-4 rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                        className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                                     />
                                     <label htmlFor="remember-me" className="ml-2 block text-xs font-bold text-slate-500 dark:text-slate-400 cursor-pointer uppercase tracking-wider">
                                         Ingat saya
@@ -126,7 +125,7 @@ const LoginPage = () => {
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="flex w-full justify-center rounded-2xl bg-indigo-600 px-4 py-4 text-sm font-black text-white uppercase tracking-widest shadow-xl shadow-indigo-600/20 hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-all active:scale-[0.98] disabled:opacity-50"
+                                    className="flex w-full justify-center rounded bg-indigo-600 px-4 py-4 text-sm font-black text-white uppercase tracking-widest shadow-xl shadow-indigo-600/20 hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-all active:scale-[0.98] disabled:opacity-50"
                                 >
                                     {isSubmitting ? 'Memproses...' : 'Masuk Sekarang'}
                                 </button>
@@ -152,7 +151,7 @@ const LoginPage = () => {
                 </div>
                 
                 <div className="flex h-full flex-col items-center justify-center p-12 text-white relative z-10">
-                    <div className="flex h-28 w-28 items-center justify-center rounded-[2rem] bg-gradient-to-br from-indigo-500 to-indigo-700 mb-10 shadow-2xl shadow-indigo-500/40 transform rotate-6 hover:rotate-0 transition-transform duration-500">
+                    <div className="flex h-28 w-28 items-center justify-center rounded bg-gradient-to-br from-indigo-500 to-indigo-700 mb-10 shadow-2xl shadow-indigo-500/40 transform rotate-6 hover:rotate-0 transition-transform duration-500">
                         <Package className="h-14 w-14 text-white" />
                     </div>
                     <h1 className="text-7xl font-black tracking-tighter mb-4 bg-clip-text text-transparent bg-gradient-to-b from-white to-slate-500">MinISP</h1>
@@ -162,11 +161,11 @@ const LoginPage = () => {
                     </p>
                     
                     <div className="mt-16 grid grid-cols-2 gap-8 w-full max-w-sm">
-                        <div className="text-center p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-sm">
+                        <div className="text-center p-6 rounded bg-white/5 border border-white/10 backdrop-blur-sm">
                             <p className="text-3xl font-black text-white">100%</p>
                             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">Automated</p>
                         </div>
-                        <div className="text-center p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-sm">
+                        <div className="text-center p-6 rounded bg-white/5 border border-white/10 backdrop-blur-sm">
                             <p className="text-3xl font-black text-white">Secure</p>
                             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">Cloud Data</p>
                         </div>

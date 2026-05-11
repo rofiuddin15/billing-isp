@@ -13,7 +13,7 @@ class AppSettingController extends Controller
         return response()->json(AppSetting::all()->pluck('value', 'key'));
     }
 
-    public function store(Request $request)
+    public function update(Request $request)
     {
         $request->validate([
             'settings' => 'required|array',

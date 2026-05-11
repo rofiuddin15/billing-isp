@@ -15,14 +15,26 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\TransactionCategoryController;
 use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\JournalController;
+use App\Http\Controllers\Api\AppSettingController;
+use App\Http\Controllers\Api\FinanceSettingController;
 
 Route::group([
     'prefix' => 'auth'
 ], function ($router) {
     Route::post('login', [AuthController::class, 'login']);
+    Route::post('register', [AuthController::class, 'register']);
+
+    Route::get('app-settings', [AppSettingController::class, 'index']);
+    Route::post('app-settings', [AppSettingController::class, 'update']);
+    
+    Route::get('finance-settings', [FinanceSettingController::class, 'index']);
+    Route::post('finance-settings', [FinanceSettingController::class, 'update']);
+
     Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:api');
     Route::post('me', [AuthController::class, 'me'])->middleware('auth:api');
 });
+
+Route::get('packages/public', [MonthlyPackageController::class, 'index']);
 
 Route::group(['middleware' => 'auth:api'], function() {
     Route::get('dashboard', [DashboardController::class, 'index']);
@@ -62,6 +74,8 @@ Route::group(['middleware' => 'auth:api'], function() {
     Route::post('settings', [\App\Http\Controllers\Api\AppSettingController::class, 'store']);
 
     Route::get('activity-logs', [\App\Http\Controllers\Api\ActivityLogController::class, 'index']);
+    
+    Route::apiResource('complaints', \App\Http\Controllers\Api\ComplaintController::class);
 });
 
 Route::get('/user', function (Request $request) {
