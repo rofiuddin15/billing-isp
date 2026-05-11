@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 const ReceiptService = {
     generatePaymentReceipt: (payment, customer, appSettings = {}) => {
@@ -54,7 +54,7 @@ const ReceiptService = {
         y += 10;
 
         // Table
-        doc.autoTable({
+        autoTable(doc, {
             startY: y,
             theme: 'plain',
             styles: { fontSize: 8, cellPadding: 1 },

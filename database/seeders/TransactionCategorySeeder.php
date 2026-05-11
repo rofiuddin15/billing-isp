@@ -12,21 +12,25 @@ class TransactionCategorySeeder extends Seeder
      */
     public function run(): void
     {
+        \Illuminate\Support\Facades\Schema::disableForeignKeyConstraints();
+        \App\Models\TransactionCategory::truncate();
+        \Illuminate\Support\Facades\Schema::enableForeignKeyConstraints();
+
         $categories = [
-            // INCOME
-            ['name' => 'Monthly Internet Fee', 'type' => 'income', 'account_code' => '4101'],
-            ['name' => 'Voucher Sales', 'type' => 'income', 'account_code' => '4102'],
-            ['name' => 'Installation Fee', 'type' => 'income', 'account_code' => '4103'],
-            ['name' => 'Hardware Sales', 'type' => 'income', 'account_code' => '4103'],
+            // PEMASUKAN (INCOME)
+            ['name' => 'Bulanan', 'type' => 'income', 'account_code' => '4101'],
+            ['name' => 'Voucher', 'type' => 'income', 'account_code' => '4102'],
+            ['name' => 'Biaya Pemasangan', 'type' => 'income', 'account_code' => '4103'],
+            ['name' => 'Penjualan Perangkat', 'type' => 'income', 'account_code' => '4103'],
             
-            // EXPENSE
-            ['name' => 'Bandwidth (Upstream)', 'type' => 'expense', 'account_code' => '5102'],
-            ['name' => 'Electricity & Utilities', 'type' => 'expense', 'account_code' => '5101'],
-            ['name' => 'Technician Salary', 'type' => 'expense', 'account_code' => '5104'],
-            ['name' => 'Marketing & Ads', 'type' => 'expense', 'account_code' => '5105'],
-            ['name' => 'Equipment Maintenance', 'type' => 'expense', 'account_code' => '5103'],
-            ['name' => 'Office Rent', 'type' => 'expense', 'account_code' => '5105'],
-            ['name' => 'Other Expenses', 'type' => 'both', 'account_code' => '5105'],
+            // PENGELUARAN (EXPENSE)
+            ['name' => 'Bandwidth (ISP)', 'type' => 'expense', 'account_code' => '5102'],
+            ['name' => 'Listrik & Utilitas', 'type' => 'expense', 'account_code' => '5101'],
+            ['name' => 'Gaji Teknisi', 'type' => 'expense', 'account_code' => '5104'],
+            ['name' => 'Pemasaran & Iklan', 'type' => 'expense', 'account_code' => '5105'],
+            ['name' => 'Pemeliharaan Alat', 'type' => 'expense', 'account_code' => '5103'],
+            ['name' => 'Sewa Kantor', 'type' => 'expense', 'account_code' => '5105'],
+            ['name' => 'Biaya Lain-lain', 'type' => 'both', 'account_code' => '5105'],
         ];
 
         foreach ($categories as $category) {

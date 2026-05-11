@@ -51,8 +51,6 @@ class CashFlowController extends Controller
         return DB::transaction(function () use ($validated) {
             $cashFlow = CashFlow::create($validated);
             
-            // Record to Ledger
-            $this->accounting->recordCashFlow($cashFlow);
 
             ActivityLog::log(
                 $cashFlow->type === 'income' ? "Catat Pendapatan" : "Catat Pengeluaran", 

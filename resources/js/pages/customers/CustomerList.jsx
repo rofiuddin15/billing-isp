@@ -39,9 +39,11 @@ const CustomerList = () => {
     
     // Modal States
     const [showPayModal, setShowPayModal] = useState(false);
+    const [showActionModal, setShowActionModal] = useState(false);
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [unpaidInvoices, setUnpaidInvoices] = useState([]);
     const [payLoading, setPayLoading] = useState(false);
+    const [actionLoading, setActionLoading] = useState(false);
     const [payingInvoice, setPayingInvoice] = useState(null);
     const [appSettings, setAppSettings] = useState({});
     const [paymentSuccess, setPaymentSuccess] = useState(false);
@@ -115,17 +117,41 @@ const CustomerList = () => {
             const paidInvoice = await apiFetch(`/api/payments/${payingInvoice.id}/pay`, { method: 'POST' });
             toast.success('Pembayaran berhasil dicatat');
             setPaymentSuccess(true);
-            setPayingInvoice(paidInvoice); // Update with full data from server (including confirmed_by)
-            // Refresh unpaid invoices
+            setPayingInvoice(paidInvoice);
             const res = await apiFetch(`/api/payments?customer_id=${selectedCustomer.id}&status=unpaid`);
             setUnpaidInvoices(res.data);
-            setPayingInvoice(null);
-            // Refresh customer list to update status
             dispatch(fetchCustomers({ page: pagination.currentPage, search }));
         } catch (error) {
             toast.error(error.message);
         } finally {
             setPayLoading(false);
+        }
+    };
+
+    const openActionModal = (e, customer) => {
+        e.stopPropagation();
+        setSelectedCustomer(customer);
+        setShowActionModal(true);
+    };
+
+    const handleUpdateStatus = async (newStatus) => {
+        setActionLoading(true);
+        try {
+            await apiFetch(`/api/customers/${selectedCustomer.id}`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    ...selectedCustomer,
+                    monthly_package_id: selectedCustomer.monthly_package_id,
+                    status: newStatus
+                })
+            });
+            toast.success('Status pelanggan berhasil diperbarui');
+            setShowActionModal(false);
+            dispatch(fetchCustomers({ page: pagination.currentPage, search }));
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setActionLoading(false);
         }
     };
 
@@ -212,14 +238,12 @@ const CustomerList = () => {
             id: 'actions',
             cell: info => (
                 <div className="flex items-center justify-end gap-2">
-                    {Number(info.row.original.total_arrears || 0) > 0 && (
-                        <button 
-                            onClick={(e) => openPayModal(e, info.row.original)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-sm text-[10px] font-black uppercase tracking-wider transition-all shadow-lg shadow-rose-600/20 active:scale-95"
-                        >
-                            <AlertCircle className="w-3.5 h-3.5" /> Tindakan
-                        </button>
-                    )}
+                    <button 
+                        onClick={(e) => openActionModal(e, info.row.original)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-sm text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 border border-slate-200"
+                    >
+                        <AlertCircle className="w-3.5 h-3.5" /> Tindakan
+                    </button>
                     <button 
                         onClick={(e) => openPayModal(e, info.row.original)}
                         className="p-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-sm transition-all shadow-md shadow-emerald-500/10 active:scale-95"
@@ -442,6 +466,58 @@ const CustomerList = () => {
                             >
                                 Tutup
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Action Modal (Tindakan) */}
+            {showActionModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+                    <div className="bg-white dark:bg-slate-900 rounded-sm shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-rose-600 text-white">
+                            <h3 className="text-lg font-bold">Tindakan Pelanggan</h3>
+                            <button onClick={() => setShowActionModal(false)}><X className="w-6 h-6" /></button>
+                        </div>
+                        <div className="p-8 space-y-6">
+                            <div className="text-center space-y-2">
+                                <p className="text-slate-500 text-sm">Kelola status untuk pelanggan:</p>
+                                <p className="text-xl font-black text-slate-800 dark:text-white">{selectedCustomer?.name}</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3">
+                                <button 
+                                    onClick={() => handleUpdateStatus('active')}
+                                    disabled={actionLoading || selectedCustomer?.status === 'active'}
+                                    className="flex items-center justify-between p-4 bg-emerald-50 dark:bg-emerald-500/5 border border-emerald-100 dark:border-emerald-500/20 rounded-sm hover:bg-emerald-100 transition-all group disabled:opacity-50"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                                        <span className="font-bold text-emerald-700">Aktifkan Kembali</span>
+                                    </div>
+                                </button>
+
+                                <button 
+                                    onClick={() => handleUpdateStatus('isolir')}
+                                    disabled={actionLoading || selectedCustomer?.status === 'isolir'}
+                                    className="flex items-center justify-between p-4 bg-amber-50 dark:bg-amber-500/5 border border-amber-100 dark:border-amber-500/20 rounded-sm hover:bg-amber-100 transition-all group disabled:opacity-50"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <AlertCircle className="w-5 h-5 text-amber-600" />
+                                        <span className="font-bold text-amber-700">Isolir Layanan</span>
+                                    </div>
+                                </button>
+
+                                <button 
+                                    onClick={() => handleUpdateStatus('non-active')}
+                                    disabled={actionLoading || selectedCustomer?.status === 'non-active'}
+                                    className="flex items-center justify-between p-4 bg-rose-50 dark:bg-rose-500/5 border border-rose-100 dark:border-rose-500/20 rounded-sm hover:bg-rose-100 transition-all group disabled:opacity-50"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <X className="w-5 h-5 text-rose-600" />
+                                        <span className="font-bold text-rose-700">Non-Aktifkan</span>
+                                    </div>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

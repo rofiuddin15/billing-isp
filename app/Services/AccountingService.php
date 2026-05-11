@@ -56,8 +56,16 @@ class AccountingService
         $category = \App\Models\TransactionCategory::find($cashFlow->category_id);
         $categoryAccount = $category ? $category->account : null;
 
+        if (!$categoryAccount) {
+            // Fallback to default accounts based on type
+            if ($cashFlow->type === 'income') {
+                $categoryAccount = Account::where('code', '4100')->first(); // Sales Revenue
+            } else {
+                $categoryAccount = Account::where('code', '5105')->first(); // Operational Expense
+            }
+        }
+
         if (!$cashAccount || !$categoryAccount) {
-            // Log or handle error: Cannot record journal without mapped account
             return null; 
         }
 

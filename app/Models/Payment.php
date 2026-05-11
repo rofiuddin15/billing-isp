@@ -16,7 +16,7 @@ class Payment extends Model
         return $this->belongsTo(Customer::class);
     }
 
-    public function confirmer()
+    public function confirmedBy()
     {
         return $this->belongsTo(User::class, 'confirmed_by');
     }

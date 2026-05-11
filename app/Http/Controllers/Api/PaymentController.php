@@ -76,10 +76,11 @@ class PaymentController extends Controller
             ]);
 
             // Record to CashFlow
+            $category = \App\Models\TransactionCategory::firstOrCreate(['name' => 'Bulanan']);
             CashFlow::create([
                 'transaction_date' => now()->toDateString(),
                 'type' => 'income',
-                'category' => 'monthly_bill',
+                'category_id' => $category->id,
                 'amount' => $payment->amount,
                 'description' => "Payment for {$payment->customer->name} ({$payment->period})",
                 'reference_id' => $payment->id,
@@ -92,7 +93,7 @@ class PaymentController extends Controller
                 "Staff mengkonfirmasi pembayaran tagihan {$payment->invoice_number} senilai Rp " . number_format($payment->amount) . " untuk pelanggan {$payment->customer->name}."
             );
 
-            return response()->json($payment->load('customer'));
+            return response()->json($payment->load(['customer', 'confirmedBy']));
         });
     }
 
