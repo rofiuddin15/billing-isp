@@ -21,15 +21,15 @@ class CashFlowController extends Controller
     {
         $query = CashFlow::with(['creator', 'category']);
 
-        if ($request->has('type')) {
+        if ($request->filled('type')) {
             $query->where('type', $request->type);
         }
 
-        if ($request->has('start_date') && $request->has('end_date')) {
+        if ($request->filled('start_date') && $request->filled('end_date')) {
             $query->whereBetween('transaction_date', [$request->start_date, $request->end_date]);
         }
 
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $query->where('description', 'like', "%{$request->search}%");
         }
 
