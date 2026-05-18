@@ -158,4 +158,112 @@ class ReportController extends Controller
             'end_date' => $endDate,
         ]);
     }
+
+    /**
+     * Generate Balance Sheet Statement (Laporan Neraca)
+     */
+    public function balanceSheet(Request $request)
+    {
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+
+        // 1. Assets (Debit - Credit)
+        $assetAccounts = Account::where('type', 'asset')->orderBy('code')->get();
+        $assets = [];
+        $totalAssets = 0;
+        foreach ($assetAccounts as $account) {
+            $query = JournalEntry::where('account_id', $account->id)
+                ->join('journals', 'journal_entries.journal_id', '=', 'journals.id');
+            if ($startDate && $endDate) {
+                $query->whereBetween('journals.date', [$startDate, $endDate]);
+            }
+            $balance = (float)$query->sum('debit') - (float)$query->sum('credit');
+            if ($balance != 0) {
+                $assets[] = ['code' => $account->code, 'name' => $account->name, 'balance' => $balance];
+                $totalAssets += $balance;
+            }
+        }
+
+        // 2. Liabilities (Credit - Debit)
+        $liabilityAccounts = Account::where('type', 'liability')->orderBy('code')->get();
+        $liabilities = [];
+        $totalLiabilities = 0;
+        foreach ($liabilityAccounts as $account) {
+            $query = JournalEntry::where('account_id', $account->id)
+                ->join('journals', 'journal_entries.journal_id', '=', 'journals.id');
+            if ($startDate && $endDate) {
+                $query->whereBetween('journals.date', [$startDate, $endDate]);
+            }
+            $balance = (float)$query->sum('credit') - (float)$query->sum('debit');
+            if ($balance != 0) {
+                $liabilities[] = ['code' => $account->code, 'name' => $account->name, 'balance' => $balance];
+                $totalLiabilities += $balance;
+            }
+        }
+
+        // 3. Equity (Credit - Debit)
+        $equityAccounts = Account::where('type', 'equity')->orderBy('code')->get();
+        $equity = [];
+        $totalEquity = 0;
+        foreach ($equityAccounts as $account) {
+            $query = JournalEntry::where('account_id', $account->id)
+                ->join('journals', 'journal_entries.journal_id', '=', 'journals.id');
+            if ($startDate && $endDate) {
+                $query->whereBetween('journals.date', [$startDate, $endDate]);
+            }
+            $balance = (float)$query->sum('credit') - (float)$query->sum('debit');
+            if ($balance != 0) {
+                $equity[] = ['code' => $account->code, 'name' => $account->name, 'balance' => $balance];
+                $totalEquity += $balance;
+            }
+        }
+
+        // 4. Retained Earnings / Laba Ditahan (Current period Net Profit)
+        $revenueAccounts = Account::where('type', 'revenue')->get();
+        $totalRevenue = 0;
+        foreach ($revenueAccounts as $account) {
+            $query = JournalEntry::where('account_id', $account->id)
+                ->join('journals', 'journal_entries.journal_id', '=', 'journals.id');
+            if ($startDate && $endDate) {
+                $query->whereBetween('journals.date', [$startDate, $endDate]);
+            }
+            $totalRevenue += ((float)$query->sum('credit') - (float)$query->sum('debit'));
+        }
+
+        $expenseAccounts = Account::where('type', 'expense')->get();
+        $totalExpense = 0;
+        foreach ($expenseAccounts as $account) {
+            $query = JournalEntry::where('account_id', $account->id)
+                ->join('journals', 'journal_entries.journal_id', '=', 'journals.id');
+            if ($startDate && $endDate) {
+                $query->whereBetween('journals.date', [$startDate, $endDate]);
+            }
+            $totalExpense += ((float)$query->sum('debit') - (float)$query->sum('credit'));
+        }
+
+        $retainedEarnings = $totalRevenue - $totalExpense;
+        if ($retainedEarnings != 0) {
+            $equity[] = [
+                'code' => '3999',
+                'name' => 'Laba Ditahan (Retained Earnings)',
+                'balance' => $retainedEarnings
+            ];
+            $totalEquity += $retainedEarnings;
+        }
+
+        $totalLiabilitiesAndEquity = $totalLiabilities + $totalEquity;
+
+        return response()->json([
+            'assets' => $assets,
+            'total_assets' => $totalAssets,
+            'liabilities' => $liabilities,
+            'total_liabilities' => $totalLiabilities,
+            'equity' => $equity,
+            'total_equity' => $totalEquity,
+            'total_liabilities_and_equity' => $totalLiabilitiesAndEquity,
+            'is_balanced' => abs($totalAssets - $totalLiabilitiesAndEquity) < 0.01,
+            'start_date' => $startDate,
+            'end_date' => $endDate
+        ]);
+    }
 }

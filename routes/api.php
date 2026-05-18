@@ -77,6 +77,7 @@ Route::group(['middleware' => 'auth:api'], function() {
     
     Route::get('reports/profit-loss', [\App\Http\Controllers\Api\ReportController::class, 'profitLoss']);
     Route::get('reports/trial-balance', [\App\Http\Controllers\Api\ReportController::class, 'trialBalance']);
+    Route::get('reports/balance-sheet', [\App\Http\Controllers\Api\ReportController::class, 'balanceSheet']);
     
     Route::apiResource('complaints', \App\Http\Controllers\Api\ComplaintController::class);
 });

@@ -9,12 +9,14 @@ import {
     CheckCircle, 
     AlertCircle,
     Download,
-    Calendar
+    Calendar,
+    Briefcase,
+    Shield
 } from 'lucide-react';
 import Badge from '../../components/Badge';
 
 const FinancialReports = () => {
-    const [activeTab, setActiveTab] = useState('profit_loss'); // profit_loss or trial_balance
+    const [activeTab, setActiveTab] = useState('profit_loss'); // profit_loss, trial_balance, or balance_sheet
     const [loading, setLoading] = useState(true);
     
     // Period Filter State
@@ -35,6 +37,17 @@ const FinancialReports = () => {
         accounts: [],
         total_debit: 0,
         total_credit: 0,
+        is_balanced: true
+    });
+
+    const [balanceSheetData, setBalanceSheetData] = useState({
+        assets: [],
+        total_assets: 0,
+        liabilities: [],
+        total_liabilities: 0,
+        equity: [],
+        total_equity: 0,
+        total_liabilities_and_equity: 0,
         is_balanced: true
     });
 
@@ -83,9 +96,12 @@ const FinancialReports = () => {
             if (activeTab === 'profit_loss') {
                 const res = await apiFetch(`/api/reports/profit-loss?${query}`);
                 setProfitLossData(res);
-            } else {
+            } else if (activeTab === 'trial_balance') {
                 const res = await apiFetch(`/api/reports/trial-balance?${query}`);
                 setTrialBalanceData(res);
+            } else if (activeTab === 'balance_sheet') {
+                const res = await apiFetch(`/api/reports/balance-sheet?${query}`);
+                setBalanceSheetData(res);
             }
         } catch (error) {
             console.error(error);
@@ -102,13 +118,19 @@ const FinancialReports = () => {
         window.print();
     };
 
+    const tabLabel = {
+        profit_loss: 'Laporan Laba Rugi',
+        trial_balance: 'Laporan Neraca Saldo',
+        balance_sheet: 'Laporan Neraca (Balance Sheet)'
+    }[activeTab];
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500 print:p-0">
             {/* Header Block */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
                 <div>
                     <h2 className="text-2xl font-bold text-slate-800 dark:text-white leading-tight">Laporan Keuangan</h2>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm">Analisis kinerja laba rugi dan keseimbangan buku besar instansi Anda.</p>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">Analisis kinerja laba rugi, neraca saldo, dan posisi keuangan instansi Anda.</p>
                 </div>
                 
                 <button
@@ -125,7 +147,7 @@ const FinancialReports = () => {
                 <h1 className="text-3xl font-extrabold text-slate-950 uppercase tracking-wide">MinISP Billing & Accounting</h1>
                 <p className="text-xs text-slate-500">LAPORAN KEUANGAN PERIODE: {activeRange.start || 'SEMUA WAKTU'} s/d {activeRange.end || 'SEMUA WAKTU'}</p>
                 <p className="text-sm font-bold text-indigo-600 mt-2">
-                    Jenis Laporan: {activeTab === 'profit_loss' ? 'Laporan Laba Rugi' : 'Laporan Neraca Saldo'}
+                    Jenis Laporan: {tabLabel}
                 </p>
             </div>
 
@@ -203,6 +225,16 @@ const FinancialReports = () => {
                 >
                     Neraca Saldo (Trial Balance)
                 </button>
+                <button
+                    onClick={() => setActiveTab('balance_sheet')}
+                    className={`pb-3 px-6 text-sm font-bold border-b-2 transition-all ${
+                        activeTab === 'balance_sheet'
+                            ? 'border-indigo-600 text-indigo-600 dark:text-white'
+                            : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-white'
+                    }`}
+                >
+                    Neraca (Balance Sheet)
+                </button>
             </div>
 
             {/* Content Switcher */}
@@ -211,10 +243,9 @@ const FinancialReports = () => {
                     <div className="animate-spin rounded-full h-10 w-10 border-4 border-indigo-600 border-t-transparent" />
                 </div>
             ) : activeTab === 'profit_loss' ? (
-                <div className="space-y-6">
+                <div className="space-y-6 animate-in fade-in duration-300">
                     {/* STATS CARDS */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {/* Total Revenue Card */}
                         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-5 shadow-sm relative overflow-hidden flex items-center justify-between">
                             <div>
                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Total Pendapatan</span>
@@ -227,7 +258,6 @@ const FinancialReports = () => {
                             </div>
                         </div>
 
-                        {/* Total Expense Card */}
                         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-5 shadow-sm relative overflow-hidden flex items-center justify-between">
                             <div>
                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Total Pengeluaran</span>
@@ -240,7 +270,6 @@ const FinancialReports = () => {
                             </div>
                         </div>
 
-                        {/* Net Income Card */}
                         <div className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-5 shadow-sm relative overflow-hidden flex items-center justify-between ${
                             profitLossData.net_income >= 0 ? 'ring-1 ring-emerald-500/20' : 'ring-1 ring-red-500/20'
                         }`}>
@@ -262,7 +291,7 @@ const FinancialReports = () => {
                         </div>
                     </div>
 
-                    {/* PROFIT & LOSS REPORT GRID */}
+                    {/* TABLES */}
                     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm shadow-sm overflow-hidden p-6 space-y-8">
                         <div>
                             <h3 className="text-lg font-bold text-slate-800 dark:text-white border-b pb-2 mb-4 uppercase tracking-wide">
@@ -340,7 +369,6 @@ const FinancialReports = () => {
                             )}
                         </div>
 
-                        {/* Net Profit Summary Panel */}
                         <div className="bg-slate-50 dark:bg-slate-950/30 p-5 rounded-lg flex flex-col sm:flex-row items-center justify-between border border-slate-100 dark:border-slate-800">
                             <div>
                                 <h4 className="text-sm font-black text-slate-400 uppercase tracking-wider">LABA / RUGI BERSIH OPERASIONAL</h4>
@@ -356,9 +384,8 @@ const FinancialReports = () => {
                         </div>
                     </div>
                 </div>
-            ) : (
-                <div className="space-y-6">
-                    {/* AUDIT STATUS CARD */}
+            ) : activeTab === 'trial_balance' ? (
+                <div className="space-y-6 animate-in fade-in duration-300">
                     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
                             <div className={`p-3 rounded-lg ${
@@ -393,7 +420,6 @@ const FinancialReports = () => {
                         </div>
                     </div>
 
-                    {/* TRIAL BALANCE TABLE */}
                     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm shadow-sm overflow-hidden p-6">
                         <h3 className="text-lg font-bold text-slate-800 dark:text-white border-b pb-2 mb-4 uppercase tracking-wide">
                             NERACA SALDO (TRIAL BALANCE)
@@ -438,6 +464,162 @@ const FinancialReports = () => {
                             <div className="flex gap-10">
                                 <span className="text-indigo-600">D: Rp {Number(trialBalanceData.total_debit).toLocaleString()}</span>
                                 <span className="text-emerald-600">K: Rp {Number(trialBalanceData.total_credit).toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div className="space-y-6 animate-in fade-in duration-300">
+                    {/* AUDIT STATUS CARD FOR BALANCE SHEET */}
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                            <div className={`p-3 rounded-lg ${
+                                balanceSheetData.is_balanced 
+                                    ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600' 
+                                    : 'bg-amber-50 dark:bg-amber-950/30 text-amber-500'
+                            }`}>
+                                {balanceSheetData.is_balanced ? (
+                                    <CheckCircle className="w-8 h-8" />
+                                ) : (
+                                    <AlertCircle className="w-8 h-8" />
+                                )}
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-slate-800 dark:text-white">Persamaan Neraca Keuangan</h3>
+                                <p className="text-slate-500 dark:text-slate-400 text-xs">
+                                    {balanceSheetData.is_balanced 
+                                        ? 'Neraca seimbang sempurna! Aset = Liabilitas + Ekuitas.' 
+                                        : 'Perhatian! Terdapat selisih antara nilai Aset dengan Pasiva (Liabilitas & Ekuitas).'}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex gap-4">
+                            <div>
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">Total Aktiva (Aset)</span>
+                                <span className="text-md font-bold text-emerald-600">Rp {Number(balanceSheetData.total_assets).toLocaleString()}</span>
+                            </div>
+                            <div>
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">Total Pasiva</span>
+                                <span className="text-md font-bold text-slate-800 dark:text-white">Rp {Number(balanceSheetData.total_liabilities_and_equity).toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* SIDE-BY-SIDE BALANCE SHEET LAYOUT */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:grid-cols-2">
+                        {/* AKTIVA - ASSETS */}
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm shadow-sm p-6 flex flex-col justify-between">
+                            <div>
+                                <h3 className="text-md font-black text-slate-800 dark:text-white border-b pb-3 mb-4 uppercase tracking-widest flex items-center gap-2">
+                                    <Briefcase className="w-4 h-4 text-indigo-500" />
+                                    AKTIVA (ASSETS)
+                                </h3>
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="text-[9px] font-black text-slate-400 uppercase tracking-widest border-b pb-2">
+                                            <th className="py-2">KODE</th>
+                                            <th className="py-2">AKUN ASET</th>
+                                            <th className="py-2 text-right">SALDO</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                                        {balanceSheetData.assets.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={3} className="py-4 text-center text-slate-400 italic">
+                                                    Tidak ada saldo aset aktif.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            balanceSheetData.assets.map((item, idx) => (
+                                                <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/10">
+                                                    <td className="py-2.5 font-mono text-xs text-slate-500">{item.code}</td>
+                                                    <td className="py-2.5 text-slate-700 dark:text-slate-300 font-medium">{item.name}</td>
+                                                    <td className="py-2.5 text-right font-bold text-slate-800 dark:text-slate-100">
+                                                        Rp {Number(item.balance).toLocaleString()}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div className="flex justify-between items-center mt-6 pt-3 border-t-2 border-slate-200 dark:border-slate-800 text-sm font-black text-indigo-600">
+                                <span>TOTAL AKTIVA</span>
+                                <span>Rp {Number(balanceSheetData.total_assets).toLocaleString()}</span>
+                            </div>
+                        </div>
+
+                        {/* PASIVA - LIABILITIES & EQUITY */}
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm shadow-sm p-6 flex flex-col justify-between">
+                            <div className="space-y-6">
+                                {/* LIABILITIES */}
+                                <div>
+                                    <h3 className="text-md font-black text-slate-800 dark:text-white border-b pb-3 mb-4 uppercase tracking-widest flex items-center gap-2">
+                                        <Shield className="w-4 h-4 text-amber-500" />
+                                        LIABILITAS (KEWAJIBAN)
+                                    </h3>
+                                    <table className="w-full text-left">
+                                        <thead>
+                                            <tr className="text-[9px] font-black text-slate-400 uppercase tracking-widest border-b pb-2">
+                                                <th className="py-2">KODE</th>
+                                                <th className="py-2">AKUN LIABILITAS</th>
+                                                <th className="py-2 text-right">SALDO</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                                            {balanceSheetData.liabilities.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={3} className="py-4 text-center text-slate-400 italic">
+                                                        Tidak ada saldo liabilitas/utang.
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                balanceSheetData.liabilities.map((item, idx) => (
+                                                    <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/10">
+                                                        <td className="py-2.5 font-mono text-xs text-slate-500">{item.code}</td>
+                                                        <td className="py-2.5 text-slate-700 dark:text-slate-300 font-medium">{item.name}</td>
+                                                        <td className="py-2.5 text-right font-bold text-slate-800 dark:text-slate-100">
+                                                            Rp {Number(item.balance).toLocaleString()}
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* EQUITY */}
+                                <div>
+                                    <h3 className="text-md font-black text-slate-800 dark:text-white border-b pb-3 mb-4 uppercase tracking-widest flex items-center gap-2">
+                                        <DollarSign className="w-4 h-4 text-emerald-500" />
+                                        EKUITAS (MODAL)
+                                    </h3>
+                                    <table className="w-full text-left">
+                                        <thead>
+                                            <tr className="text-[9px] font-black text-slate-400 uppercase tracking-widest border-b pb-2">
+                                                <th className="py-2">KODE</th>
+                                                <th className="py-2">AKUN EKUITAS</th>
+                                                <th className="py-2 text-right">SALDO</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                                            {balanceSheetData.equity.map((item, idx) => (
+                                                <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/10">
+                                                    <td className="py-2.5 font-mono text-xs text-slate-500">{item.code}</td>
+                                                    <td className="py-2.5 text-slate-700 dark:text-slate-300 font-medium">{item.name}</td>
+                                                    <td className="py-2.5 text-right font-bold text-slate-800 dark:text-slate-100">
+                                                        Rp {Number(item.balance).toLocaleString()}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-between items-center mt-6 pt-3 border-t-2 border-slate-200 dark:border-slate-800 text-sm font-black text-slate-800 dark:text-white">
+                                <span>TOTAL PASIVA</span>
+                                <span>Rp {Number(balanceSheetData.total_liabilities_and_equity).toLocaleString()}</span>
                             </div>
                         </div>
                     </div>
