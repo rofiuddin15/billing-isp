@@ -38,7 +38,7 @@ class DashboardController extends Controller
                 if ($todayDay > $dueDateDay) {
                     $q->orWhere('period', $currentPeriod);
                 }
-            })->sum('amount');
+            })->sum(DB::raw('amount - discount - paid_amount'));
 
         // Recent Activity (Mixed)
         $recentTransactions = CashFlow::latest()->take(5)->get();

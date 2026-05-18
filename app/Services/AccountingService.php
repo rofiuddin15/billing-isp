@@ -93,28 +93,39 @@ class AccountingService
                 ]
             );
 
-            $discount = (float)($payment->discount ?? 0);
-            $invoiceAmt = max(0, (float)$payment->amount - $discount);
             $cashAmt = (float)$cashFlow->amount;
-            $difference = $cashAmt - $invoiceAmt;
+
+            // Extract dynamic cash, balance used, and excess values from description text
+            $deductedFromBalance = 0;
+            if (preg_match('/Saldo:\s*Rp\s*([0-9.,]+)/i', $cashFlow->description, $matches)) {
+                $deductedFromBalance = (float)str_replace(',', '', $matches[1]);
+            }
+
+            $excess = 0;
+            if (preg_match('/Lebih:\s*Rp\s*([0-9.,]+)/i', $cashFlow->description, $matches)) {
+                $excess = (float)str_replace(',', '', $matches[1]);
+            }
+
+            $settledInvoiceAmt = max(0, $cashAmt - $excess + $deductedFromBalance);
 
             // 1. Debit Cash (only for actual cash received physically)
             if ($cashAmt > 0) {
                 $entries[] = ['account_id' => $cashAccount->id, 'debit' => $cashAmt];
             }
 
-            // 2. Credit Sales Revenue (always recognize the full package price as revenue)
-            if ($invoiceAmt > 0) {
-                $entries[] = ['account_id' => $categoryAccount->id, 'credit' => $invoiceAmt];
+            // 2. Credit Sales Revenue (credit exactly the settled amount on the invoice)
+            if ($settledInvoiceAmt > 0) {
+                $entries[] = ['account_id' => $categoryAccount->id, 'credit' => $settledInvoiceAmt];
             }
 
-            // 3. Balance Adjustments
-            if ($difference > 0) {
+            // 3. Balance Adjustments (using Deferred Revenue)
+            if ($excess > 0) {
                 // Excess payment: Credit Deferred Revenue (increases liability)
-                $entries[] = ['account_id' => $deferredAccount->id, 'credit' => $difference];
-            } elseif ($difference < 0) {
+                $entries[] = ['account_id' => $deferredAccount->id, 'credit' => $excess];
+            }
+            if ($deductedFromBalance > 0) {
                 // Balance used: Debit Deferred Revenue (decreases liability)
-                $entries[] = ['account_id' => $deferredAccount->id, 'debit' => abs($difference)];
+                $entries[] = ['account_id' => $deferredAccount->id, 'debit' => $deductedFromBalance];
             }
         } else {
             // Normal fallback transaction

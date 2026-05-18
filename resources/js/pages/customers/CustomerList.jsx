@@ -52,30 +52,46 @@ const CustomerList = () => {
     const [useBalance, setUseBalance] = useState(false);
     const [amountPaid, setAmountPaid] = useState('');
     const [discount, setDiscount] = useState('');
+    const [paymentType, setPaymentType] = useState('full');
+    const [installmentAmount, setInstallmentAmount] = useState('');
 
     useEffect(() => {
         if (payingInvoice) {
             setUseBalance(false);
             setDiscount('');
-            setAmountPaid(String(payingInvoice.amount || ''));
+            setPaymentType('full');
+            setInstallmentAmount('');
+            const remaining = Number(payingInvoice.amount || 0) - Number(payingInvoice.discount || 0) - Number(payingInvoice.paid_amount || 0);
+            setAmountPaid(String(Math.max(0, remaining)));
         } else {
             setUseBalance(false);
             setDiscount('');
+            setPaymentType('full');
+            setInstallmentAmount('');
             setAmountPaid('');
         }
     }, [payingInvoice]);
 
-    // Dynamically adjust amountPaid based on discount and balance deductions
+    // Dynamically adjust amountPaid based on discount, installment settings, and balance deductions
     useEffect(() => {
         if (payingInvoice) {
-            const invoiceAmt = Number(payingInvoice.amount || 0);
+            const originalAmt = Number(payingInvoice.amount || 0);
+            const paidSoFar = Number(payingInvoice.paid_amount || 0);
+            const currentDiscount = Number(payingInvoice.discount || 0);
+            const discountInputVal = Number(discount || 0);
+            
+            const remainingInvoice = Math.max(0, originalAmt - currentDiscount - paidSoFar - discountInputVal);
+            
+            const targetToPay = paymentType === 'installment' 
+                ? Math.min(remainingInvoice, Number(installmentAmount || 0))
+                : remainingInvoice;
+                
             const custBal = Number(selectedCustomer?.balance || 0);
-            const discountVal = Number(discount || 0);
-            const netInvoiceAfterDiscount = Math.max(0, invoiceAmt - discountVal);
-            const maxBalanceUse = useBalance ? Math.min(netInvoiceAfterDiscount, custBal) : 0;
-            setAmountPaid(String(Math.max(0, netInvoiceAfterDiscount - maxBalanceUse)));
+            const maxBalanceUse = useBalance ? Math.min(targetToPay, custBal) : 0;
+            
+            setAmountPaid(String(Math.max(0, targetToPay - maxBalanceUse)));
         }
-    }, [discount, useBalance, payingInvoice, selectedCustomer]);
+    }, [discount, useBalance, paymentType, installmentAmount, payingInvoice, selectedCustomer]);
 
     useEffect(() => {
         dispatch(fetchCustomers({ page: 1 }));
@@ -148,7 +164,9 @@ const CustomerList = () => {
                 body: JSON.stringify({
                     amount_paid: amountPaid,
                     use_balance: useBalance,
-                    discount: discount
+                    discount: discount,
+                    payment_type: paymentType,
+                    installment_amount: installmentAmount
                 })
             });
             toast.success('Pembayaran berhasil dicatat');
@@ -393,48 +411,55 @@ const CustomerList = () => {
 
             {/* Payment Modal */}
             {showPayModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3">
                     <div className="bg-white dark:bg-slate-900 rounded-sm shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2.5 bg-emerald-100 text-emerald-600 rounded-lg">
-                                    <Banknote className="w-6 h-6" />
+                        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
+                                <div className="p-2 bg-emerald-100 text-emerald-600 rounded-md">
+                                    <Banknote className="w-5 h-5" />
                                 </div>
-                                <h3 className="text-lg font-bold text-slate-800 dark:text-white">Gerbang Pembayaran</h3>
+                                <h3 className="text-base font-bold text-slate-800 dark:text-white">Gerbang Pembayaran</h3>
                             </div>
                             <button onClick={() => setShowPayModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">
-                                <X className="w-6 h-6" />
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
                         
-                        <div className="p-8 space-y-8">
+                        <div className="p-4 space-y-4">
                             {selectedCustomer && (
-                                <div className="flex items-center gap-5 p-5 bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/30 rounded-sm">
-                                    <div className="w-14 h-14 rounded-full bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center text-indigo-600 border border-indigo-100 dark:border-indigo-800">
-                                        <User className="w-7 h-7" />
+                                <div className="flex items-center gap-3 p-3 bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/30 rounded-sm">
+                                    <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center text-indigo-600 border border-indigo-100 dark:border-indigo-800">
+                                        <User className="w-5 h-5" />
                                     </div>
                                     <div>
-                                        <p className="text-lg font-bold text-slate-800 dark:text-white leading-tight">{selectedCustomer.name}</p>
-                                        <p className="text-sm text-slate-500 mt-1 font-medium">{selectedCustomer.customer_code} • <span className="text-indigo-600 font-bold">{selectedCustomer.monthly_package?.name}</span></p>
+                                        <p className="text-sm font-bold text-slate-800 dark:text-white leading-tight">{selectedCustomer.name}</p>
+                                        <p className="text-xs text-slate-500 mt-0.5 font-medium">{selectedCustomer.customer_code} • <span className="text-indigo-600 font-bold">{selectedCustomer.monthly_package?.name}</span></p>
                                     </div>
                                 </div>
                             )}
 
-                            <div className="space-y-4">
-                                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <div className="space-y-3">
+                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                                     <Calendar className="w-3 h-3" /> {payingInvoice ? 'Konfirmasi Pembayaran' : 'Tagihan Belum Dibayar'}
                                 </h4>
 
                                 {payLoading && !payingInvoice ? (
-                                    <div className="py-12 text-center text-slate-400 italic font-medium">Memuat tagihan...</div>
+                                    <div className="py-8 text-center text-slate-400 italic font-medium text-xs">Memuat tagihan...</div>
                                 ) : payingInvoice ? ( (() => {
-                                    const invoiceAmt = Number(payingInvoice.amount || 0);
-                                    const custBal = Number(selectedCustomer.balance || 0);
-                                    const discountVal = Number(discount || 0);
-                                    const netInvoiceAfterDiscount = Math.max(0, invoiceAmt - discountVal);
+                                    const originalAmt = Number(payingInvoice.amount || 0);
+                                    const paidSoFar = Number(payingInvoice.paid_amount || 0);
+                                    const currentDiscount = Number(payingInvoice.discount || 0);
+                                    const discountInputVal = Number(discount || 0);
                                     
-                                    const maxBalanceUse = useBalance ? Math.min(netInvoiceAfterDiscount, custBal) : 0;
-                                    const netInvoiceAmount = Math.max(0, netInvoiceAfterDiscount - maxBalanceUse);
+                                    const remainingInvoice = Math.max(0, originalAmt - currentDiscount - paidSoFar - discountInputVal);
+                                    
+                                    const targetToPay = paymentType === 'installment' 
+                                        ? Math.min(remainingInvoice, Number(installmentAmount || 0))
+                                        : remainingInvoice;
+                                        
+                                    const custBal = Number(selectedCustomer.balance || 0);
+                                    const maxBalanceUse = useBalance ? Math.min(targetToPay, custBal) : 0;
+                                    const netInvoiceAmount = Math.max(0, targetToPay - maxBalanceUse);
                                     
                                     const cashReceived = Number(amountPaid || 0);
                                     const excessPayment = Math.max(0, cashReceived - netInvoiceAmount);
@@ -443,154 +468,211 @@ const CustomerList = () => {
                                     const cashShortfall = netInvoiceAmount > cashReceived ? (netInvoiceAmount - cashReceived) : 0;
 
                                     return (
-                                        <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-sm border border-slate-200 dark:border-slate-800 space-y-5">
+                                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-sm border border-slate-200 dark:border-slate-800 space-y-4">
                                             {paymentSuccess ? (
-                                                <div className="space-y-4">
-                                                    <div className="flex justify-between items-center pb-4 border-b border-slate-200 dark:border-slate-700">
-                                                        <span className="text-sm text-slate-500 font-medium">Periode Tagihan</span>
-                                                        <span className="text-sm font-bold text-slate-800 dark:text-white">{payingInvoice.period}</span>
+                                                <div className="space-y-3 text-xs">
+                                                    <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-700">
+                                                        <span className="text-slate-500 font-medium">Periode Tagihan</span>
+                                                        <span className="font-bold text-slate-800 dark:text-white">{payingInvoice.period}</span>
                                                     </div>
-                                                    <div className="flex justify-between items-center pb-4 border-b border-slate-200 dark:border-slate-700">
-                                                        <span className="text-sm text-slate-500 font-medium">Nomor Invoice</span>
-                                                        <span className="text-xs font-mono text-slate-400">{payingInvoice.invoice_number}</span>
+                                                    <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-700">
+                                                        <span className="text-slate-500 font-medium">Nomor Invoice</span>
+                                                        <span className="font-mono text-slate-400">{payingInvoice.invoice_number}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-700">
+                                                        <span className="text-slate-500 font-medium">Total Terbayar</span>
+                                                        <span className="font-bold text-slate-800 dark:text-white">Rp {Number(payingInvoice.paid_amount || 0).toLocaleString()}</span>
                                                     </div>
                                                     {payingInvoice.discount && Number(payingInvoice.discount) > 0 && (
-                                                        <div className="flex justify-between items-center pb-4 border-b border-slate-200 dark:border-slate-700">
-                                                            <span className="text-sm text-slate-500 font-medium">Diskon</span>
-                                                            <span className="text-sm font-bold text-indigo-600">-Rp {Number(payingInvoice.discount).toLocaleString()}</span>
+                                                        <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-700">
+                                                            <span className="text-slate-500 font-medium">Diskon</span>
+                                                            <span className="font-bold text-indigo-600">-Rp {Number(payingInvoice.discount).toLocaleString()}</span>
                                                         </div>
                                                     )}
                                                     <div className="flex justify-between items-center">
-                                                        <span className="text-sm text-slate-500 font-medium">Total Tagihan</span>
-                                                        <span className="text-2xl font-black text-indigo-600">Rp {Number(payingInvoice.amount - (payingInvoice.discount || 0)).toLocaleString()}</span>
+                                                        <span className="text-slate-500 font-bold">Status Tagihan</span>
+                                                        <span className={`font-black px-2 py-0.5 rounded text-[10px] uppercase ${payingInvoice.status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                                            {payingInvoice.status === 'paid' ? 'LUNAS' : 'DICICIL'}
+                                                        </span>
                                                     </div>
-                                                    <div className="pt-4 flex gap-3">
+                                                    <div className="pt-2 flex gap-2">
                                                         <button 
                                                             onClick={() => {
                                                                 import('../../utils/ReceiptService').then(m => {
                                                                     m.default.generatePaymentReceipt(payingInvoice, selectedCustomer, appSettings);
                                                                 });
                                                             }}
-                                                            className="flex-1 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-widest rounded-sm shadow-xl shadow-indigo-600/20 transition-all active:scale-95 flex items-center justify-center gap-3"
+                                                            className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-wider rounded-sm shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
                                                         >
-                                                            <Download className="w-5 h-5" /> Cetak Struk Pembayaran
+                                                            <Download className="w-4 h-4" /> Cetak Struk
                                                         </button>
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div className="space-y-4">
-                                                    <div className="grid grid-cols-2 gap-4 pb-4 border-b border-slate-200 dark:border-slate-700">
+                                                <div className="space-y-3.5">
+                                                    {/* Invoices Balance Grid */}
+                                                    <div className="grid grid-cols-3 gap-2 pb-2.5 border-b border-slate-200 dark:border-slate-700">
                                                         <div>
-                                                            <span className="text-xs text-slate-400 font-black uppercase tracking-widest">Tagihan Asli</span>
-                                                            <p className="text-base font-black text-slate-800 dark:text-white">Rp {invoiceAmt.toLocaleString()}</p>
+                                                            <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider block">Tagihan Asli</span>
+                                                            <p className="text-xs font-bold text-slate-800 dark:text-white">Rp {originalAmt.toLocaleString()}</p>
                                                         </div>
                                                         <div>
-                                                            <span className="text-xs text-slate-400 font-black uppercase tracking-widest">Saldo Pelanggan</span>
-                                                            <p className="text-base font-black text-slate-800 dark:text-white">Rp {custBal.toLocaleString()}</p>
+                                                            <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider block">Sudah Dibayar</span>
+                                                            <p className="text-xs font-bold text-slate-800 dark:text-white">Rp {paidSoFar.toLocaleString()}</p>
+                                                        </div>
+                                                        <div>
+                                                            <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider block">Saldo Pelanggan</span>
+                                                            <p className="text-xs font-bold text-slate-800 dark:text-white">Rp {custBal.toLocaleString()}</p>
                                                         </div>
                                                     </div>
 
-                                                    {/* Discount Input Field */}
-                                                    <div className="space-y-1.5">
-                                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Diskon Potongan (Rp)</label>
-                                                        <div className="relative">
-                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">Rp</span>
-                                                            <input 
-                                                                type="number"
-                                                                min="0"
-                                                                max={invoiceAmt}
-                                                                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm pl-9 pr-3 py-2 text-sm font-black text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
-                                                                value={discount}
-                                                                onChange={(e) => setDiscount(e.target.value)}
-                                                                placeholder="Masukkan nominal diskon..."
-                                                            />
+                                                    {/* Space-Saving Form Parameters Grid */}
+                                                    <div className="grid grid-cols-2 gap-3.5">
+                                                        {/* Left Column: Payment Type & Installment Amount */}
+                                                        <div className="space-y-3">
+                                                            <div className="space-y-1">
+                                                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Jenis Pembayaran</label>
+                                                                <div className="flex bg-slate-150 dark:bg-slate-900 rounded-sm p-0.5 border border-slate-200 dark:border-slate-800">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setPaymentType('full')}
+                                                                        className={`flex-1 py-1 text-center text-[10px] font-bold rounded-sm transition-all ${paymentType === 'full' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                                                                    >
+                                                                        Lunas
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setPaymentType('installment')}
+                                                                        className={`flex-1 py-1 text-center text-[10px] font-bold rounded-sm transition-all ${paymentType === 'installment' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                                                                    >
+                                                                        Cicilan
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+
+                                                            {paymentType === 'installment' && (
+                                                                <div className="space-y-1 animate-in slide-in-from-top-2 duration-200">
+                                                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Nominal Cicilan (Rp)</label>
+                                                                    <div className="relative">
+                                                                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Rp</span>
+                                                                        <input
+                                                                            type="number"
+                                                                            required
+                                                                            min="1000"
+                                                                            max={remainingInvoice}
+                                                                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm pl-7 pr-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-white outline-none focus:ring-1.5 focus:ring-indigo-500"
+                                                                            value={installmentAmount}
+                                                                            onChange={(e) => setInstallmentAmount(e.target.value)}
+                                                                            placeholder="Contoh: 50000"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Right Column: Discount & Cash Input */}
+                                                        <div className="space-y-3">
+                                                            <div className="space-y-1">
+                                                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Diskon Potongan (Rp)</label>
+                                                                <div className="relative">
+                                                                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Rp</span>
+                                                                    <input
+                                                                        type="number"
+                                                                        min="0"
+                                                                        max={remainingInvoice}
+                                                                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm pl-7 pr-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-white outline-none focus:ring-1.5 focus:ring-indigo-500"
+                                                                        value={discount}
+                                                                        onChange={(e) => setDiscount(e.target.value)}
+                                                                        placeholder="Diskon..."
+                                                                    />
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="space-y-1">
+                                                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Uang Tunai Diterima (Rp)</label>
+                                                                <div className="relative">
+                                                                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Rp</span>
+                                                                    <input
+                                                                        type="number"
+                                                                        required
+                                                                        min="0"
+                                                                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm pl-7 pr-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-white outline-none focus:ring-1.5 focus:ring-indigo-500"
+                                                                        value={amountPaid}
+                                                                        onChange={(e) => setAmountPaid(e.target.value)}
+                                                                        placeholder="Tunai..."
+                                                                    />
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </div>
 
                                                     {/* Use Balance Checkbox */}
                                                     {custBal > 0 && (
-                                                        <label className="flex items-center gap-3 p-3 bg-indigo-50/50 dark:bg-indigo-950/10 border border-indigo-100 dark:border-indigo-900/30 rounded-sm cursor-pointer select-none">
+                                                        <label className="flex items-center gap-2.5 p-2 bg-indigo-50/30 dark:bg-indigo-950/10 border border-indigo-100/60 dark:border-indigo-900/30 rounded-sm cursor-pointer select-none">
                                                             <input 
                                                                 type="checkbox"
                                                                 checked={useBalance}
                                                                 onChange={(e) => setUseBalance(e.target.checked)}
-                                                                className="w-4 h-4 text-indigo-600 border-slate-300 dark:border-slate-700 rounded focus:ring-indigo-500"
+                                                                className="w-3.5 h-3.5 text-indigo-600 border-slate-300 dark:border-slate-700 rounded focus:ring-indigo-500"
                                                             />
                                                             <div>
-                                                                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Gunakan Saldo Aktif</p>
-                                                                <p className="text-[9px] text-slate-500 mt-0.5">Potong maksimal Rp {Math.min(netInvoiceAfterDiscount, custBal).toLocaleString()}</p>
+                                                                <p className="text-[10px] font-bold text-slate-700 dark:text-slate-300">Gunakan Saldo Aktif Pelanggan</p>
+                                                                <p className="text-[9px] text-slate-500 mt-0.5">Potong maksimal Rp {Math.min(targetToPay, custBal).toLocaleString()}</p>
                                                             </div>
                                                         </label>
                                                     )}
 
-                                                    {/* Cash Input Field */}
-                                                    <div className="space-y-1.5">
-                                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Uang Tunai Diterima (Rp)</label>
-                                                        <div className="relative">
-                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">Rp</span>
-                                                            <input 
-                                                                type="number"
-                                                                required
-                                                                min="0"
-                                                                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm pl-9 pr-3 py-2 text-sm font-black text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
-                                                                value={amountPaid}
-                                                                onChange={(e) => setAmountPaid(e.target.value)}
-                                                                placeholder="Masukkan nominal tunai..."
-                                                            />
-                                                        </div>
-                                                    </div>
-
                                                     {/* Calculation Details */}
-                                                    <div className="border-t border-dashed border-slate-200 dark:border-slate-800 pt-3.5 space-y-2 text-xs">
-                                                        {discountVal > 0 && (
+                                                    <div className="border-t border-dashed border-slate-200 dark:border-slate-800 pt-2.5 space-y-1.5 text-[11px]">
+                                                        {discountInputVal > 0 && (
                                                             <div className="flex justify-between text-slate-500">
-                                                                <span>Diskon Potongan:</span>
-                                                                <span className="font-bold text-indigo-600">-Rp {discountVal.toLocaleString()}</span>
+                                                                <span>Diskon Baru Ditambahkan:</span>
+                                                                <span className="font-bold text-indigo-600">-Rp {discountInputVal.toLocaleString()}</span>
                                                             </div>
                                                         )}
                                                         {useBalance && (
                                                             <div className="flex justify-between text-slate-500">
-                                                                <span>Potong dari Saldo:</span>
+                                                                <span>Potong dari Saldo Pelanggan:</span>
                                                                 <span className="font-bold text-rose-600">-Rp {maxBalanceUse.toLocaleString()}</span>
                                                             </div>
                                                         )}
                                                         <div className="flex justify-between text-slate-700 dark:text-slate-300 font-bold">
-                                                            <span>Sisa Tagihan Tunai:</span>
+                                                            <span>Sisa Tagihan Tunai (Sekarang):</span>
                                                             <span>Rp {netInvoiceAmount.toLocaleString()}</span>
                                                         </div>
                                                         
                                                         {excessPayment > 0 && (
-                                                            <div className="flex justify-between text-emerald-600 font-bold bg-emerald-50 dark:bg-emerald-950/15 p-1.5 rounded-sm">
-                                                                <span>Kelebihan (Masuk Saldo):</span>
+                                                            <div className="flex justify-between text-emerald-600 font-bold bg-emerald-50 dark:bg-emerald-950/15 p-1 rounded-sm">
+                                                                <span>Lebih Bayar (Masuk Saldo):</span>
                                                                 <span>+Rp {excessPayment.toLocaleString()}</span>
                                                             </div>
                                                         )}
                                                         
                                                         {cashShortfall > 0 && (
-                                                            <div className="flex justify-between text-rose-600 font-bold bg-rose-50 dark:bg-rose-950/15 p-1.5 rounded-sm">
-                                                                <span>Kekurangan Bayar:</span>
+                                                            <div className="flex justify-between text-rose-600 font-bold bg-rose-50 dark:bg-rose-950/15 p-1 rounded-sm">
+                                                                <span>Kekurangan Bayar Tunai:</span>
                                                                 <span>Rp {cashShortfall.toLocaleString()}</span>
                                                             </div>
                                                         )}
 
-                                                        <div className="flex justify-between text-indigo-600 font-bold border-t border-slate-100 dark:border-slate-800/80 pt-2">
-                                                            <span>Saldo Akhir Pelanggan:</span>
+                                                        <div className="flex justify-between text-indigo-600 font-bold border-t border-slate-100 dark:border-slate-800/80 pt-1.5">
+                                                            <span>Saldo Akhir Pelanggan setelah ini:</span>
                                                             <span>Rp {projectedNewBalance.toLocaleString()}</span>
                                                         </div>
                                                     </div>
 
                                                     {/* Form Actions */}
-                                                    <div className="pt-2 flex gap-3">
+                                                    <div className="pt-1.5 flex gap-2.5">
                                                         <button 
                                                             onClick={() => setPayingInvoice(null)}
-                                                            className="flex-1 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-bold rounded-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-xs"
+                                                            className="flex-1 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-bold rounded-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-xs"
                                                         >
                                                             Kembali
                                                         </button>
                                                         <button 
                                                             onClick={handlePayInvoice}
                                                             disabled={payLoading || cashShortfall > 0}
-                                                            className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-sm shadow-lg shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50 text-xs"
+                                                            className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-sm shadow-md transition-all active:scale-95 disabled:opacity-50 text-xs"
                                                         >
                                                             {payLoading ? 'Memproses...' : 'Bayar Sekarang'}
                                                         </button>
@@ -600,44 +682,56 @@ const CustomerList = () => {
                                         </div>
                                     );
                                 })() ) : unpaidInvoices.length === 0 ? (
-                                    <div className="py-10 text-center bg-emerald-50/30 dark:bg-emerald-900/10 rounded-sm border border-dashed border-emerald-200 dark:border-emerald-900/30">
-                                        <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
-                                        <p className="text-emerald-600 dark:text-emerald-400 font-bold text-base">Luar biasa! Semua tagihan telah lunas.</p>
+                                    <div className="py-8 text-center bg-emerald-50/30 dark:bg-emerald-900/10 rounded-sm border border-dashed border-emerald-200 dark:border-emerald-900/30">
+                                        <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
+                                        <p className="text-emerald-600 dark:text-emerald-400 font-bold text-xs">Luar biasa! Semua tagihan telah lunas.</p>
                                     </div>
                                 ) : (
-                                    <div className="space-y-3 max-h-72 overflow-y-auto pr-2 custom-scrollbar">
-                                        {unpaidInvoices.map((inv) => (
-                                            <div key={inv.id} className="flex items-center justify-between p-5 border border-slate-200 dark:border-slate-800 rounded-sm hover:border-indigo-500 hover:bg-indigo-50/30 dark:hover:bg-indigo-900/5 transition-all group">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="p-2 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded shadow-sm">
-                                                        <Calendar className="w-5 h-5 text-slate-400" />
+                                    <div className="space-y-2 max-h-56 overflow-y-auto pr-1.5 custom-scrollbar">
+                                        {unpaidInvoices.map((inv) => {
+                                            const original = Number(inv.amount || 0);
+                                            const discountAmt = Number(inv.discount || 0);
+                                            const paid = Number(inv.paid_amount || 0);
+                                            const remaining = Math.max(0, original - discountAmt - paid);
+
+                                            return (
+                                                <div key={inv.id} className="flex items-center justify-between p-3 border border-slate-200 dark:border-slate-800 rounded-sm hover:border-indigo-500 hover:bg-indigo-50/30 dark:hover:bg-indigo-900/5 transition-all group">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="p-1.5 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded shadow-sm">
+                                                            <Calendar className="w-4 h-4 text-slate-400" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-bold text-slate-800 dark:text-white leading-none">{inv.period}</p>
+                                                            <p className="text-[10px] text-slate-400 font-mono mt-1">{inv.invoice_number}</p>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <p className="text-base font-bold text-slate-800 dark:text-white leading-none">{inv.period}</p>
-                                                        <p className="text-xs text-slate-400 font-mono mt-1">{inv.invoice_number}</p>
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="text-right">
+                                                            <span className="text-sm font-black text-slate-900 dark:text-white block">Rp {remaining.toLocaleString()}</span>
+                                                            {paid > 0 && (
+                                                                <span className="text-[9px] text-slate-400">Dicicil (dari Rp {original.toLocaleString()})</span>
+                                                            )}
+                                                        </div>
+                                                        <button 
+                                                            onClick={() => setPayingInvoice(inv)}
+                                                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-sm shadow-md transition-all active:scale-95"
+                                                        >
+                                                            Pilih
+                                                        </button>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-6">
-                                                    <span className="text-lg font-black text-slate-900 dark:text-white">Rp {Number(inv.amount).toLocaleString()}</span>
-                                                    <button 
-                                                        onClick={() => setPayingInvoice(inv)}
-                                                        className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-sm shadow-lg shadow-indigo-500/20 transition-all active:scale-95"
-                                                    >
-                                                        Konfirmasi Bayar
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>
                         </div>
                         
-                        <div className="px-8 py-5 bg-slate-50 dark:bg-slate-950/50 border-t border-slate-200 dark:border-slate-800 flex justify-end items-center gap-4">
-                             <p className="text-xs text-slate-400 italic mr-auto">Pembayaran dicatat langsung ke Arus Kas.</p>
+                        <div className="px-5 py-3.5 bg-slate-50 dark:bg-slate-950/50 border-t border-slate-200 dark:border-slate-800 flex justify-end items-center gap-3">
+                            <p className="text-[10px] text-slate-400 italic mr-auto">Pembayaran dicatat langsung ke Arus Kas.</p>
                             <button 
                                 onClick={() => setShowPayModal(false)}
-                                className="px-6 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors"
+                                className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors"
                             >
                                 Tutup
                             </button>

@@ -25,7 +25,7 @@ class CustomerController extends Controller
                       $sub->orWhere('period', $currentPeriod);
                   }
               });
-        }], 'amount');
+        }], \Illuminate\Support\Facades\DB::raw('amount - discount - paid_amount'));
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -132,7 +132,7 @@ class CustomerController extends Controller
                           $sub->orWhere('period', $currentPeriod);
                       }
                   });
-            }], 'amount');
+            }], \Illuminate\Support\Facades\DB::raw('amount - discount - paid_amount'));
     }
 
     public function update(Request $request, Customer $customer)

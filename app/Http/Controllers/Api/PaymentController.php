@@ -110,44 +110,68 @@ class PaymentController extends Controller
             'amount_paid' => 'nullable|numeric|min:0',
             'use_balance' => 'nullable',
             'discount' => 'nullable|numeric|min:0',
+            'payment_type' => 'nullable|string|in:full,installment',
+            'installment_amount' => 'nullable|numeric|min:1000',
         ]);
 
         $useBalance = filter_var($request->input('use_balance'), FILTER_VALIDATE_BOOLEAN);
-        $discount = $request->has('discount') ? (float)$request->input('discount') : 0;
-        
-        $invoiceAmount = (float) $payment->amount;
-        $netInvoiceAmount = max(0, $invoiceAmount - $discount);
+        $discount = $request->has('discount') ? (float)$request->input('discount') : (float)($payment->discount ?? 0);
+        $paymentType = $request->input('payment_type', 'full');
+
+        // Total outstanding invoice amount before this transaction
+        $remainingInvoiceAmount = max(0, (float)$payment->amount - $discount - (float)$payment->paid_amount);
+
+        // Determine the target amount to be paid in this transaction
+        if ($paymentType === 'installment') {
+            $installmentInput = (float)$request->input('installment_amount');
+            if ($installmentInput <= 0) {
+                return response()->json(['message' => 'Nominal angsuran harus lebih besar dari 0.'], 422);
+            }
+            $targetInvoiceAmount = min($remainingInvoiceAmount, $installmentInput);
+        } else {
+            $targetInvoiceAmount = $remainingInvoiceAmount;
+        }
+
+        if ($targetInvoiceAmount <= 0) {
+            return response()->json(['message' => 'Tagihan ini sudah diselesaikan atau nominal target bayar tidak valid.'], 422);
+        }
+
         $currentBalance = (float) $customer->balance;
 
         $deductedFromBalance = 0;
         if ($useBalance) {
-            $deductedFromBalance = min($netInvoiceAmount, $currentBalance);
+            $deductedFromBalance = min($targetInvoiceAmount, $currentBalance);
         }
 
-        $remainingInvoiceAmount = max(0, $netInvoiceAmount - $deductedFromBalance);
+        $remainingTargetAmount = max(0, $targetInvoiceAmount - $deductedFromBalance);
 
-        // Default amount paid to the remaining amount if not specified
-        $cashPaid = $request->has('amount_paid') ? (float) $request->amount_paid : $remainingInvoiceAmount;
+        // Default amount paid to the remaining target amount if not specified
+        $cashPaid = $request->has('amount_paid') ? (float) $request->amount_paid : $remainingTargetAmount;
 
-        if ($cashPaid < $remainingInvoiceAmount) {
+        if ($cashPaid < $remainingTargetAmount) {
             return response()->json([
-                'message' => 'Jumlah uang tunai yang dibayar kurang dari sisa tagihan setelah diskon. Sisa tagihan setelah saldo: Rp ' . number_format($remainingInvoiceAmount)
+                'message' => 'Jumlah uang tunai yang dibayar kurang dari nominal yang harus dibayar. Nominal yang harus dibayar setelah saldo: Rp ' . number_format($remainingTargetAmount)
             ], 422);
         }
 
-        $excess = $cashPaid - $remainingInvoiceAmount;
+        $excess = $cashPaid - $remainingTargetAmount;
 
-        return DB::transaction(function () use ($payment, $customer, $deductedFromBalance, $cashPaid, $excess, $discount) {
+        return DB::transaction(function () use ($payment, $customer, $deductedFromBalance, $cashPaid, $excess, $discount, $targetInvoiceAmount, $paymentType) {
             // Update customer's balance
             if ($deductedFromBalance > 0 || $excess > 0) {
                 $customer->balance = (float)$customer->balance - $deductedFromBalance + $excess;
                 $customer->save();
             }
 
+            // Calculate new paid amount
+            $newPaidAmount = (float)$payment->paid_amount + $targetInvoiceAmount;
+            $isFullyPaid = ($newPaidAmount + $discount) >= (float)$payment->amount;
+
             // Update payment status
             $payment->update([
-                'status' => 'paid',
+                'status' => $isFullyPaid ? 'paid' : 'unpaid',
                 'discount' => $discount,
+                'paid_amount' => $newPaidAmount,
                 'confirmed_by' => auth('api')->id(),
             ]);
 
@@ -163,22 +187,30 @@ class PaymentController extends Controller
                 if ($discount > 0) {
                     $descParts[] = "Diskon: Rp " . number_format($discount);
                 }
+                if ($excess > 0) {
+                    $descParts[] = "Lebih: Rp " . number_format($excess);
+                }
+                
+                $paymentLabel = $isFullyPaid ? "Lunas" : "Angsuran";
                 
                 CashFlow::create([
                     'transaction_date' => now()->toDateString(),
                     'type' => 'income',
                     'category_id' => $category->id,
                     'amount' => $cashPaid,
-                    'description' => "Payment for {$customer->name} ({$payment->period}) - " . implode(', ', $descParts),
+                    'description' => "{$paymentLabel} payment for {$customer->name} ({$payment->period}) - " . implode(', ', $descParts),
                     'reference_id' => $payment->id,
                     'created_by' => auth('api')->id(),
                 ]);
             }
 
             // Log activity with details
-            $logMsg = "Staff mengonfirmasi pembayaran tagihan {$payment->invoice_number} untuk pelanggan {$customer->name}.";
+            $logMsg = "Staff mengonfirmasi pembayaran ({$paymentType}) tagihan {$payment->invoice_number} untuk pelanggan {$customer->name}.";
             if ($discount > 0) {
                 $logMsg .= " Diskon: Rp " . number_format($discount) . ".";
+            }
+            if ($targetInvoiceAmount > 0) {
+                $logMsg .= " Target Bayar: Rp " . number_format($targetInvoiceAmount) . ".";
             }
             if ($deductedFromBalance > 0) {
                 $logMsg .= " Potong Saldo: Rp " . number_format($deductedFromBalance) . ".";
@@ -189,6 +221,7 @@ class PaymentController extends Controller
             if ($excess > 0) {
                 $logMsg .= " Lebih bayar Rp " . number_format($excess) . " masuk ke saldo pelanggan.";
             }
+            $logMsg .= " Status akhir tagihan: " . ($isFullyPaid ? "LUNAS" : "DICICIL (Total dibayar: Rp " . number_format($newPaidAmount) . ")");
 
             ActivityLog::log(
                 "Pembayaran Tagihan", 
