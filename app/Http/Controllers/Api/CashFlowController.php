@@ -33,7 +33,7 @@ class CashFlowController extends Controller
             $query->where('description', 'like', "%{$request->search}%");
         }
 
-        return $query->latest('transaction_date')->paginate($request->get('per_page', 10));
+        return $query->latest('id')->paginate($request->get('per_page', 10));
     }
 
     public function store(Request $request)
