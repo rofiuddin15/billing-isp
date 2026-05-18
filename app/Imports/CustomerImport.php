@@ -12,10 +12,23 @@ class CustomerImport implements ToModel, WithHeadingRow, WithValidation
 {
     public function model(array $row)
     {
-        // Try to find package by name (Indonesian 'paket' column)
+        // Try to find package dynamically:
+        // 1. By ID if the value in 'paket' is numeric
+        // 2. By Name if the value in 'paket' is text
+        // 3. Fallback to package_id column
         $package = null;
         if (isset($row['paket'])) {
-            $package = MonthlyPackage::where('name', 'like', '%' . $row['paket'] . '%')->first();
+            $paketVal = trim($row['paket']);
+            if (is_numeric($paketVal)) {
+                $package = MonthlyPackage::find($paketVal);
+            }
+            if (!$package) {
+                $package = MonthlyPackage::where('name', 'like', '%' . $paketVal . '%')->first();
+            }
+        }
+
+        if (!$package && isset($row['package_id'])) {
+            $package = MonthlyPackage::find($row['package_id']);
         }
 
         $customerCode = $row['kode_pelanggan'] ?? $this->generateCode();
@@ -44,7 +57,7 @@ class CustomerImport implements ToModel, WithHeadingRow, WithValidation
             'address'            => $row['alamat'] ?? null,
             'phone'              => $phone,
             'pppoe_user'         => $row['pppoe_user'] ?? null,
-            'monthly_package_id' => $package ? $package->id : ($row['package_id'] ?? null),
+            'monthly_package_id' => $package ? $package->id : null,
             'status'             => $this->mapStatus($row['status'] ?? 'active'),
             'latitude'           => $row['latitude'] ?? null,
             'longitude'          => $row['longitude'] ?? null,
@@ -55,6 +68,44 @@ class CustomerImport implements ToModel, WithHeadingRow, WithValidation
     {
         return [
             'nama' => 'required|string|max:255',
+            'kode_pelanggan' => 'nullable|unique:customers,customer_code',
+            'email' => 'nullable|email',
+            'telepon' => 'nullable|string|max:20',
+            'paket' => [
+                'required_without:package_id',
+                function ($attribute, $value, $fail) {
+                    if (!empty($value)) {
+                        $value = trim($value);
+                        $exists = false;
+                        if (is_numeric($value)) {
+                            $exists = \App\Models\MonthlyPackage::where('id', $value)->exists();
+                        }
+                        if (!$exists) {
+                            $exists = \App\Models\MonthlyPackage::where('name', 'like', '%' . $value . '%')->exists();
+                        }
+                        if (!$exists) {
+                            $fail("Paket internet dengan ID atau nama '{$value}' tidak ditemukan di database.");
+                        }
+                    }
+                }
+            ],
+            'package_id' => [
+                'required_without:paket',
+                'nullable',
+                'exists:monthly_packages,id'
+            ],
+        ];
+    }
+
+    public function customValidationMessages()
+    {
+        return [
+            'nama.required' => 'Kolom nama wajib diisi.',
+            'kode_pelanggan.unique' => 'Kode pelanggan :value sudah terdaftar di database.',
+            'email.email' => 'Format email tidak valid.',
+            'paket.required_without' => 'Kolom paket atau ID paket wajib diisi.',
+            'package_id.required_without' => 'Kolom paket atau ID paket wajib diisi.',
+            'package_id.exists' => 'ID paket yang dipilih tidak valid atau tidak ditemukan.',
         ];
     }
 
@@ -74,3 +125,4 @@ class CustomerImport implements ToModel, WithHeadingRow, WithValidation
         return 'MP' . str_pad($num, 5, '0', STR_PAD_LEFT);
     }
 }
+
