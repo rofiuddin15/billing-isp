@@ -14,41 +14,51 @@ class MenuPermissionSeeder extends Seeder
         // Reset cached roles and permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // Define Menu Permissions
-        $menus = [
-            'menu.dashboard' => 'Akses Dashboard',
-            'menu.customers' => 'Akses Menu Pelanggan',
-            'menu.packages' => 'Akses Menu Paket Bulanan',
-            'menu.vouchers' => 'Akses Menu Voucher',
-            'menu.finance' => 'Akses Menu Arus Kas',
-            'menu.coa' => 'Akses Menu Bagan Akun',
-            'menu.ledger' => 'Akses Menu Buku Besar',
-            'menu.finance_settings' => 'Akses Pengaturan Biaya Pendaftaran',
-            'menu.master_vouchers' => 'Akses Data Master Paket Voucher',
-            'menu.master_categories' => 'Akses Data Master Kategori Transaksi',
-            'menu.complaints' => 'Akses Menu Aduan',
-            'menu.settings' => 'Akses Menu Pengaturan',
-            'menu.roles' => 'Akses Manajemen Role & Akses',
-            'menu.users' => 'Akses Manajemen Staff'
+        // Define Menu Names
+        $menuNames = [
+            'dashboard',
+            'customers',
+            'packages',
+            'vouchers',
+            'finance',
+            'coa',
+            'ledger',
+            'reports',
+            'finance_settings',
+            'master_vouchers',
+            'master_categories',
+            'complaints',
+            'users',
+            'roles',
+            'settings'
         ];
+
+        $actions = ['menu', 'create', 'edit', 'delete'];
+        $permissionsToSeed = [];
+
+        foreach ($menuNames as $name) {
+            foreach ($actions as $action) {
+                $permissionsToSeed["{$action}.{$name}"] = true;
+            }
+        }
 
         $guards = ['api', 'web'];
 
         foreach ($guards as $guard) {
-            // Delete obsolete permissions
+            // Delete obsolete permissions that are not in our list
             Permission::where('guard_name', $guard)
-                ->whereNotIn('name', array_keys($menus))
+                ->whereNotIn('name', array_keys($permissionsToSeed))
                 ->delete();
 
-            foreach ($menus as $name => $description) {
+            foreach (array_keys($permissionsToSeed) as $permName) {
                 Permission::firstOrCreate([
-                    'name' => $name, 
+                    'name' => $permName, 
                     'guard_name' => $guard
                 ]);
             }
         }
 
-        // Ensure roles use 'api' guard for consistency with our JWT auth
+        // Standardize existing roles
         $rolesToUpdate = Role::where('guard_name', 'web')->get();
         foreach ($rolesToUpdate as $role) {
             $role->guard_name = 'api';
@@ -59,7 +69,8 @@ class MenuPermissionSeeder extends Seeder
         $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'api']);
         
         // Sync all permissions to Admin
-        $adminRole->syncPermissions(array_keys($menus));
+        $allPermissions = Permission::where('guard_name', 'api')->pluck('name')->toArray();
+        $adminRole->syncPermissions($allPermissions);
 
         // Assign Admin role to the first user if any
         $user = User::first();

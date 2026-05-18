@@ -70,7 +70,7 @@ const Sidebar = () => {
                 { icon: Wallet, label: 'Arus Kas', path: '/finance', permission: 'menu.finance' },
                 { icon: Landmark, label: 'Bagan Akun', path: '/finance/coa', permission: 'menu.coa' },
                 { icon: FileText, label: 'Buku Besar', path: '/finance/ledger', permission: 'menu.ledger' },
-                { icon: FileText, label: 'Laporan Keuangan', path: '/finance/reports', permission: 'menu.ledger' },
+                { icon: FileText, label: 'Laporan Keuangan', path: '/finance/reports', permission: 'menu.reports' },
                 { icon: Wallet, label: 'Pengaturan Biaya', path: '/finance/settings', permission: 'menu.finance_settings' },
             ]
         },

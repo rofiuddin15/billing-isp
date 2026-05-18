@@ -1,8 +1,44 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import apiFetch from '../../utils/api';
-import { Shield, Save, Plus, Trash2, CheckSquare, Square } from 'lucide-react';
+import { 
+    Shield, 
+    Save, 
+    Plus, 
+    Trash2, 
+    CheckSquare, 
+    Square, 
+    Grid,
+    Check,
+    X,
+    Lock
+} from 'lucide-react';
 import { toast } from 'react-toastify';
 import Badge from '../../components/Badge';
+
+const MENU_LABELS = {
+    dashboard: 'Dasbor Utama',
+    customers: 'Pelanggan & Tagihan',
+    packages: 'Paket Bulanan',
+    vouchers: 'Voucher Pelanggan',
+    finance: 'Arus Kas Keuangan',
+    coa: 'Bagan Akun (COA)',
+    ledger: 'Buku Besar Akuntansi',
+    reports: 'Laporan Keuangan',
+    finance_settings: 'Pengaturan Biaya',
+    master_vouchers: 'Paket Voucher (Master)',
+    master_categories: 'Kategori Transaksi (Master)',
+    complaints: 'Aduan Pelanggan',
+    users: 'Manajemen Staff',
+    roles: 'Manajemen Akses & Role',
+    settings: 'Pengaturan Sistem'
+};
+
+const ACTIONS = [
+    { key: 'menu', label: 'Lihat', color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/30' },
+    { key: 'create', label: 'Tambah', color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30' },
+    { key: 'edit', label: 'Ubah', color: 'text-amber-600 bg-amber-50 dark:bg-amber-950/30' },
+    { key: 'delete', label: 'Hapus', color: 'text-rose-600 bg-rose-50 dark:bg-rose-950/30' }
+];
 
 const RoleManagement = () => {
     const [roles, setRoles] = useState([]);
@@ -46,11 +82,51 @@ const RoleManagement = () => {
         setRolePermissions(role.permissions.map(p => p.name));
     };
 
-    const togglePermission = (permName) => {
+    // Toggle single permission checkbox
+    const handleTogglePermission = (menu, action) => {
+        if (selectedRole?.name === 'admin') return; // Admin has locked permissions
+
+        const permName = `${action}.${menu}`;
         if (rolePermissions.includes(permName)) {
             setRolePermissions(rolePermissions.filter(p => p !== permName));
         } else {
             setRolePermissions([...rolePermissions, permName]);
+        }
+    };
+
+    // Toggle all CRUD actions for a single menu row
+    const handleToggleRow = (menu, isAllSelected) => {
+        if (selectedRole?.name === 'admin') return;
+
+        const rowPermissions = ACTIONS.map(act => `${act.key}.${menu}`);
+        if (isAllSelected) {
+            // Remove all
+            setRolePermissions(rolePermissions.filter(p => !rowPermissions.includes(p)));
+        } else {
+            // Add all missing
+            const newPerms = [...rolePermissions];
+            rowPermissions.forEach(p => {
+                if (!newPerms.includes(p)) newPerms.push(p);
+            });
+            setRolePermissions(newPerms);
+        }
+    };
+
+    // Toggle a column action for all menus
+    const handleToggleColumn = (actionKey, isAllSelected) => {
+        if (selectedRole?.name === 'admin') return;
+
+        const colPermissions = Object.keys(MENU_LABELS).map(menu => `${actionKey}.${menu}`);
+        if (isAllSelected) {
+            // Remove all in this column
+            setRolePermissions(rolePermissions.filter(p => !colPermissions.includes(p)));
+        } else {
+            // Add all in this column
+            const newPerms = [...rolePermissions];
+            colPermissions.forEach(p => {
+                if (!newPerms.includes(p)) newPerms.push(p);
+            });
+            setRolePermissions(newPerms);
         }
     };
 
@@ -63,10 +139,10 @@ const RoleManagement = () => {
                 method: 'POST',
                 body: JSON.stringify({ permissions: rolePermissions })
             });
-            toast.success('Hak akses berhasil diperbarui');
+            toast.success('Matriks hak akses berhasil disimpan');
             fetchData();
         } catch (error) {
-            toast.error('Gagal memperbarui hak akses');
+            toast.error('Gagal menyimpan hak akses');
         } finally {
             setSaving(false);
         }
@@ -77,7 +153,7 @@ const RoleManagement = () => {
         try {
             await apiFetch('/api/roles', {
                 method: 'POST',
-                body: JSON.stringify({ name: newRoleName })
+                body: JSON.stringify({ name: newRoleName.toLowerCase() })
             });
             toast.success('Role baru berhasil dibuat');
             setNewRoleName('');
@@ -100,124 +176,231 @@ const RoleManagement = () => {
         }
     };
 
+    // Matrix status pre-calculations
+    const matrixStats = useMemo(() => {
+        const stats = {};
+        Object.keys(MENU_LABELS).forEach(menu => {
+            const rowPerms = ACTIONS.map(act => `${act.key}.${menu}`);
+            const selectedCount = rowPerms.filter(p => rolePermissions.includes(p)).length;
+            stats[menu] = {
+                all: selectedCount === ACTIONS.length,
+                none: selectedCount === 0,
+                some: selectedCount > 0 && selectedCount < ACTIONS.length
+            };
+        });
+
+        // Column Stats
+        const colStats = {};
+        ACTIONS.forEach(act => {
+            const colPerms = Object.keys(MENU_LABELS).map(menu => `${act.key}.${menu}`);
+            const selectedCount = colPerms.filter(p => rolePermissions.includes(p)).length;
+            colStats[act.key] = selectedCount === Object.keys(MENU_LABELS).length;
+        });
+
+        return { rows: stats, cols: colStats };
+    }, [rolePermissions]);
+
     if (loading) {
-        return <div className="p-8 text-center text-slate-500">Memuat data...</div>;
+        return (
+            <div className="h-64 flex flex-col items-center justify-center space-y-4">
+                <div className="animate-spin rounded-full h-10 w-10 border-4 border-indigo-600 border-t-transparent" />
+                <p className="text-sm font-bold text-slate-500">Memuat matriks akses...</p>
+            </div>
+        );
     }
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+        <div className="p-4 sm:p-6 lg:p-8 space-y-6 animate-in fade-in duration-500">
+            {/* Header Block */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-2">
-                        <Shield className="w-6 h-6 text-indigo-600" />
-                        Manajemen Akses & Role
+                    <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-2.5">
+                        <Shield className="w-7 h-7 text-indigo-600" />
+                        Matriks Manajemen Akses & Role
                     </h2>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm">Atur visibilitas menu untuk setiap role pengguna.</p>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">
+                        Kelola hak akses pengguna pada tingkat fitur operasional CRUD (Lihat, Tambah, Ubah, Hapus) per menu.
+                    </p>
                 </div>
                 <button 
                     onClick={() => setShowNewRoleModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-sm shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black uppercase tracking-wider rounded-sm shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
                 >
-                    <Plus className="w-4 h-4" /> Tambah Role
+                    <Plus className="w-4 h-4" /> Tambah Role Baru
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                {/* Role List */}
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                {/* Left Panel: Role List */}
                 <div className="lg:col-span-1 space-y-3">
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest px-2">Daftar Role</h3>
-                    <div className="space-y-1">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest px-2">Daftar Hak Akses (Role)</h3>
+                    <div className="space-y-1.5">
                         {roles.map(role => (
                             <div 
                                 key={role.id}
                                 onClick={() => handleSelectRole(role)}
                                 className={`
-                                    group flex items-center justify-between p-3 rounded-sm cursor-pointer transition-all border
+                                    group flex items-center justify-between p-3.5 rounded-sm cursor-pointer transition-all border
                                     ${selectedRole?.id === role.id 
-                                        ? 'bg-indigo-50 border-indigo-200 dark:bg-indigo-500/10 dark:border-indigo-500/30 text-indigo-700 dark:text-indigo-400' 
-                                        : 'bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'}
+                                        ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-500/20 font-black' 
+                                        : 'bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 font-bold'}
                                 `}
                             >
-                                <span className="font-bold text-sm capitalize">{role.name}</span>
-                                {role.name !== 'admin' && (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-mono opacity-60">#</span>
+                                    <span className="text-sm capitalize">{role.name}</span>
+                                </div>
+                                {role.name !== 'admin' ? (
                                     <button 
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             handleDeleteRole(role.id);
                                         }}
-                                        className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-rose-50 dark:hover:bg-rose-500/10 text-rose-500 rounded-lg transition-all"
+                                        className={`p-1.5 rounded transition-all opacity-0 group-hover:opacity-100 ${
+                                            selectedRole?.id === role.id 
+                                                ? 'hover:bg-indigo-700 text-white' 
+                                                : 'hover:bg-rose-50 dark:hover:bg-rose-500/10 text-rose-500'
+                                        }`}
                                     >
                                         <Trash2 className="w-3.5 h-3.5" />
                                     </button>
+                                ) : (
+                                    <Lock className="w-3.5 h-3.5 opacity-65" />
                                 )}
                             </div>
                         ))}
                     </div>
                 </div>
 
-                {/* Permission Grid */}
-                <div className="lg:col-span-3">
+                {/* Right Panel: Interactive Permission Matrix */}
+                <div className="lg:col-span-4">
                     {selectedRole ? (
                         <div className="bg-white dark:bg-slate-900 rounded-sm border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col h-full">
-                            <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/20">
+                            
+                            {/* Matrix Header Controls */}
+                            <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-800/20">
                                 <div>
                                     <div className="flex items-center gap-2">
                                         <h3 className="text-lg font-black text-slate-800 dark:text-white tracking-tight capitalize">
-                                            Akses Menu: {selectedRole.name}
+                                            Matriks Hak Akses: {selectedRole.name}
                                         </h3>
-                                        <Badge variant="indigo" className="text-[10px]">{rolePermissions.length} Menu Aktif</Badge>
+                                        <Badge variant="indigo" className="text-[10px]">{rolePermissions.length} Fitur Diizinkan</Badge>
                                     </div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Centang menu yang boleh diakses oleh role ini</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                                        Pilih dan atur matriks CRUD di bawah untuk membatasi fitur.
+                                    </p>
                                 </div>
+                                
                                 <button 
                                     onClick={handleSavePermissions}
                                     disabled={saving || selectedRole.name === 'admin'}
                                     className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-wider rounded-sm shadow-lg shadow-emerald-600/20 transition-all active:scale-95"
                                 >
-                                    <Save className="w-4 h-4" /> {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
+                                    <Save className="w-4 h-4" /> {saving ? 'Menyimpan...' : 'Simpan Matriks'}
                                 </button>
                             </div>
-                            
-                            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {permissions.map(perm => (
-                                    <div 
-                                        key={perm.id}
-                                        onClick={() => selectedRole.name !== 'admin' && togglePermission(perm.name)}
-                                        className={`
-                                            flex items-center gap-3 p-4 rounded-sm border transition-all cursor-pointer
-                                            ${rolePermissions.includes(perm.name)
-                                                ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-500/5 dark:border-emerald-500/20 text-emerald-800 dark:text-emerald-400'
-                                                : 'bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'}
-                                            ${selectedRole.name === 'admin' ? 'cursor-default opacity-80' : ''}
-                                        `}
-                                    >
-                                        <div className="flex-shrink-0">
-                                            {rolePermissions.includes(perm.name) ? (
-                                                <CheckSquare className="w-5 h-5 text-emerald-600" />
-                                            ) : (
-                                                <Square className="w-5 h-5 text-slate-300" />
-                                            )}
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-bold leading-tight">{perm.name.replace('menu.', '').replace('_', ' ').toUpperCase()}</p>
-                                            <p className="text-[10px] font-medium opacity-60">ID: {perm.name}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                            
+
+                            {/* Warning For Admin */}
                             {selectedRole.name === 'admin' && (
-                                <div className="mx-6 mb-6 p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-sm">
-                                    <p className="text-xs text-amber-700 dark:text-amber-400 font-medium leading-relaxed">
-                                        <strong>Catatan:</strong> Role Admin memiliki akses penuh ke semua menu secara default dan tidak dapat diubah untuk menjaga integritas sistem.
+                                <div className="m-6 mb-0 p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-sm flex items-center gap-3">
+                                    <Lock className="w-5 h-5 text-amber-500 flex-shrink-0" />
+                                    <p className="text-xs text-amber-700 dark:text-amber-400 font-bold leading-relaxed">
+                                        Role <strong>Admin</strong> dikunci secara default dengan akses penuh (60/60) ke seluruh menu & operasi untuk melindungi integritas operasional.
                                     </p>
                                 </div>
                             )}
+
+                            {/* Permission Matrix Table */}
+                            <div className="overflow-x-auto p-6">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="border-b border-slate-200 dark:border-slate-800 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                            <th className="py-3 px-4">FITUR MENU</th>
+                                            {ACTIONS.map(action => (
+                                                <th key={action.key} className="py-3 px-4 text-center">
+                                                    <button
+                                                        type="button"
+                                                        disabled={selectedRole.name === 'admin'}
+                                                        onClick={() => handleToggleColumn(action.key, matrixStats.cols[action.key])}
+                                                        className={`px-2.5 py-1 rounded-sm border hover:border-slate-300 dark:hover:border-slate-700 text-[9px] font-black transition-all ${
+                                                            matrixStats.cols[action.key]
+                                                                ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200'
+                                                                : 'bg-transparent text-slate-400'
+                                                        }`}
+                                                    >
+                                                        {action.label.toUpperCase()}
+                                                    </button>
+                                                </th>
+                                            ))}
+                                            <th className="py-3 px-4 text-right">BARIS MENU</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                                        {Object.entries(MENU_LABELS).map(([menuName, menuLabel]) => {
+                                            const isRowAllSelected = matrixStats.rows[menuName]?.all;
+                                            return (
+                                                <tr key={menuName} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-all">
+                                                    <td className="py-3 px-4 font-bold text-slate-700 dark:text-slate-300">
+                                                        <div className="flex flex-col">
+                                                            <span>{menuLabel}</span>
+                                                            <span className="text-[9px] font-mono text-slate-400 lowercase font-medium">
+                                                                {menuName}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    
+                                                    {ACTIONS.map(action => {
+                                                        const permName = `${action.key}.${menuName}`;
+                                                        const isChecked = rolePermissions.includes(permName);
+                                                        return (
+                                                            <td key={action.key} className="py-3 px-4 text-center">
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={selectedRole.name === 'admin'}
+                                                                    onClick={() => handleTogglePermission(menuName, action.key)}
+                                                                    className={`
+                                                                        inline-flex items-center justify-center p-1.5 rounded transition-all border
+                                                                        ${isChecked 
+                                                                            ? `${action.color} border-slate-200 dark:border-slate-800` 
+                                                                            : 'bg-transparent border-slate-200 dark:border-slate-800 text-slate-200 dark:text-slate-800 hover:border-slate-300 dark:hover:border-slate-700'}
+                                                                        ${selectedRole.name === 'admin' ? 'cursor-default opacity-85' : 'cursor-pointer'}
+                                                                    `}
+                                                                >
+                                                                    {isChecked ? (
+                                                                        <Check className="w-4 h-4 font-black" />
+                                                                    ) : (
+                                                                        <X className="w-4 h-4 opacity-30" />
+                                                                    )}
+                                                                </button>
+                                                            </td>
+                                                        );
+                                                    })}
+
+                                                    <td className="py-3 px-4 text-right">
+                                                        <button
+                                                            type="button"
+                                                            disabled={selectedRole.name === 'admin'}
+                                                            onClick={() => handleToggleRow(menuName, isRowAllSelected)}
+                                                            className={`px-3 py-1 text-[9px] font-black uppercase tracking-wider rounded-sm transition-all border ${
+                                                                isRowAllSelected
+                                                                    ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
+                                                                    : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900'
+                                                            }`}
+                                                        >
+                                                            {isRowAllSelected ? 'Semua' : 'Toggle'}
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     ) : (
                         <div className="h-full flex flex-col items-center justify-center p-12 bg-slate-50/50 dark:bg-slate-800/20 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-sm">
                             <Shield className="w-16 h-16 text-slate-200 mb-4" />
-                            <p className="text-slate-400 font-bold">Pilih role untuk mengatur hak akses menu</p>
+                            <p className="text-slate-400 font-bold">Pilih role untuk mengatur matriks hak akses</p>
                         </div>
                     )}
                 </div>
@@ -229,7 +412,7 @@ const RoleManagement = () => {
                     <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-800">
                         <div className="p-6 border-b border-slate-100 dark:border-slate-800">
                             <h3 className="text-lg font-black text-slate-800 dark:text-white tracking-tight">Tambah Role Baru</h3>
-                            <p className="text-xs text-slate-500">Definisikan nama role (contoh: 'staff', 'finance')</p>
+                            <p className="text-xs text-slate-500">Definisikan nama role baru untuk hak akses CRUD terpadu.</p>
                         </div>
                         <form onSubmit={handleCreateRole} className="p-6 space-y-4">
                             <div>
@@ -239,7 +422,7 @@ const RoleManagement = () => {
                                     required
                                     value={newRoleName}
                                     onChange={e => setNewRoleName(e.target.value)}
-                                    placeholder="contoh: teknisi"
+                                    placeholder="contoh: finance"
                                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-4 py-3 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
                                 />
                             </div>
