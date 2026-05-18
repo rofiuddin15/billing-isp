@@ -48,6 +48,20 @@ const CustomerList = () => {
     const [appSettings, setAppSettings] = useState({});
     const [paymentSuccess, setPaymentSuccess] = useState(false);
 
+    // New Balance & Payment States
+    const [useBalance, setUseBalance] = useState(false);
+    const [amountPaid, setAmountPaid] = useState('');
+
+    useEffect(() => {
+        if (payingInvoice) {
+            setUseBalance(false);
+            setAmountPaid(String(payingInvoice.amount || ''));
+        } else {
+            setUseBalance(false);
+            setAmountPaid('');
+        }
+    }, [payingInvoice]);
+
     useEffect(() => {
         dispatch(fetchCustomers({ page: 1 }));
         apiFetch('/api/settings').then(res => setAppSettings(res)).catch(err => console.error(err));
@@ -114,7 +128,13 @@ const CustomerList = () => {
         if (!payingInvoice) return;
         setPayLoading(true);
         try {
-            const paidInvoice = await apiFetch(`/api/payments/${payingInvoice.id}/pay`, { method: 'POST' });
+            const paidInvoice = await apiFetch(`/api/payments/${payingInvoice.id}/pay`, { 
+                method: 'POST',
+                body: JSON.stringify({
+                    amount_paid: amountPaid,
+                    use_balance: useBalance
+                })
+            });
             toast.success('Pembayaran berhasil dicatat');
             setPaymentSuccess(true);
             setPayingInvoice(paidInvoice);
@@ -391,53 +411,153 @@ const CustomerList = () => {
 
                                 {payLoading && !payingInvoice ? (
                                     <div className="py-12 text-center text-slate-400 italic font-medium">Memuat tagihan...</div>
-                                ) : payingInvoice ? (
-                                    <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-sm border border-slate-200 dark:border-slate-800 space-y-6">
-                                        <div className="flex justify-between items-center pb-4 border-b border-slate-200 dark:border-slate-700">
-                                            <span className="text-sm text-slate-500 font-medium">Periode Tagihan</span>
-                                            <span className="text-sm font-bold text-slate-800 dark:text-white">{payingInvoice.period}</span>
-                                        </div>
-                                        <div className="flex justify-between items-center pb-4 border-b border-slate-200 dark:border-slate-700">
-                                            <span className="text-sm text-slate-500 font-medium">Nomor Invoice</span>
-                                            <span className="text-xs font-mono text-slate-400">{payingInvoice.invoice_number}</span>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm text-slate-500 font-medium">Total Pembayaran</span>
-                                            <span className="text-2xl font-black text-indigo-600">Rp {Number(payingInvoice.amount).toLocaleString()}</span>
-                                        </div>
+                                ) : payingInvoice ? ( (() => {
+                                    const invoiceAmt = Number(payingInvoice.amount || 0);
+                                    const custBal = Number(selectedCustomer.balance || 0);
+                                    
+                                    const maxBalanceUse = useBalance ? Math.min(invoiceAmt, custBal) : 0;
+                                    const netInvoiceAmount = Math.max(0, invoiceAmt - maxBalanceUse);
+                                    
+                                    const cashReceived = Number(amountPaid || 0);
+                                    const excessPayment = Math.max(0, cashReceived - netInvoiceAmount);
+                                    const projectedNewBalance = custBal - maxBalanceUse + excessPayment;
+                                    
+                                    const cashShortfall = netInvoiceAmount > cashReceived ? (netInvoiceAmount - cashReceived) : 0;
 
-                                        <div className="pt-4 flex gap-3">
+                                    return (
+                                        <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-sm border border-slate-200 dark:border-slate-800 space-y-5">
                                             {paymentSuccess ? (
-                                                <button 
-                                                    onClick={() => {
-                                                        import('../../utils/ReceiptService').then(m => {
-                                                            m.default.generatePaymentReceipt(payingInvoice, selectedCustomer, appSettings);
-                                                        });
-                                                    }}
-                                                    className="flex-1 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-widest rounded-sm shadow-xl shadow-indigo-600/20 transition-all active:scale-95 flex items-center justify-center gap-3"
-                                                >
-                                                    <Download className="w-5 h-5" /> Cetak Struk Pembayaran
-                                                </button>
+                                                <div className="space-y-4">
+                                                    <div className="flex justify-between items-center pb-4 border-b border-slate-200 dark:border-slate-700">
+                                                        <span className="text-sm text-slate-500 font-medium">Periode Tagihan</span>
+                                                        <span className="text-sm font-bold text-slate-800 dark:text-white">{payingInvoice.period}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center pb-4 border-b border-slate-200 dark:border-slate-700">
+                                                        <span className="text-sm text-slate-500 font-medium">Nomor Invoice</span>
+                                                        <span className="text-xs font-mono text-slate-400">{payingInvoice.invoice_number}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-sm text-slate-500 font-medium">Total Tagihan</span>
+                                                        <span className="text-2xl font-black text-indigo-600">Rp {Number(payingInvoice.amount).toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="pt-4 flex gap-3">
+                                                        <button 
+                                                            onClick={() => {
+                                                                import('../../utils/ReceiptService').then(m => {
+                                                                    m.default.generatePaymentReceipt(payingInvoice, selectedCustomer, appSettings);
+                                                                });
+                                                            }}
+                                                            className="flex-1 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-widest rounded-sm shadow-xl shadow-indigo-600/20 transition-all active:scale-95 flex items-center justify-center gap-3"
+                                                        >
+                                                            <Download className="w-5 h-5" /> Cetak Struk Pembayaran
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             ) : (
-                                                <>
-                                                    <button 
-                                                        onClick={() => setPayingInvoice(null)}
-                                                        className="flex-1 py-3 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-bold rounded-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
-                                                    >
-                                                        Kembali
-                                                    </button>
-                                                    <button 
-                                                        onClick={handlePayInvoice}
-                                                        disabled={payLoading}
-                                                        className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-sm shadow-lg shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50"
-                                                    >
-                                                        {payLoading ? 'Memproses...' : 'Bayar Sekarang'}
-                                                    </button>
-                                                </>
+                                                <div className="space-y-4">
+                                                    <div className="grid grid-cols-2 gap-4 pb-4 border-b border-slate-200 dark:border-slate-700">
+                                                        <div>
+                                                            <span className="text-xs text-slate-400 font-black uppercase tracking-widest">Tagihan Asli</span>
+                                                            <p className="text-base font-black text-slate-800 dark:text-white">Rp {invoiceAmt.toLocaleString()}</p>
+                                                        </div>
+                                                        <div>
+                                                            <span className="text-xs text-slate-400 font-black uppercase tracking-widest">Saldo Pelanggan</span>
+                                                            <p className="text-base font-black text-slate-800 dark:text-white">Rp {custBal.toLocaleString()}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Use Balance Checkbox */}
+                                                    {custBal > 0 && (
+                                                        <label className="flex items-center gap-3 p-3 bg-indigo-50/50 dark:bg-indigo-950/10 border border-indigo-100 dark:border-indigo-900/30 rounded-sm cursor-pointer select-none">
+                                                            <input 
+                                                                type="checkbox"
+                                                                checked={useBalance}
+                                                                onChange={(e) => {
+                                                                    const checked = e.target.checked;
+                                                                    setUseBalance(checked);
+                                                                    const newDeduction = checked ? Math.min(invoiceAmt, custBal) : 0;
+                                                                    setAmountPaid(String(invoiceAmt - newDeduction));
+                                                                }}
+                                                                className="w-4 h-4 text-indigo-600 border-slate-300 dark:border-slate-700 rounded focus:ring-indigo-500"
+                                                            />
+                                                            <div>
+                                                                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Gunakan Saldo Aktif</p>
+                                                                <p className="text-[9px] text-slate-500 mt-0.5">Potong maksimal Rp {Math.min(invoiceAmt, custBal).toLocaleString()}</p>
+                                                            </div>
+                                                        </label>
+                                                    )}
+
+                                                    {/* Cash Input Field */}
+                                                    <div className="space-y-1.5">
+                                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Uang Tunai Diterima (Rp)</label>
+                                                        <div className="relative">
+                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">Rp</span>
+                                                            <input 
+                                                                type="number"
+                                                                required
+                                                                min="0"
+                                                                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm pl-9 pr-3 py-2 text-sm font-black text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                                                                value={amountPaid}
+                                                                onChange={(e) => setAmountPaid(e.target.value)}
+                                                                placeholder="Masukkan nominal tunai..."
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Calculation Details */}
+                                                    <div className="border-t border-dashed border-slate-200 dark:border-slate-800 pt-3.5 space-y-2 text-xs">
+                                                        {useBalance && (
+                                                            <div className="flex justify-between text-slate-500">
+                                                                <span>Potong dari Saldo:</span>
+                                                                <span className="font-bold text-rose-600">-Rp {maxBalanceUse.toLocaleString()}</span>
+                                                            </div>
+                                                        )}
+                                                        <div className="flex justify-between text-slate-700 dark:text-slate-300 font-bold">
+                                                            <span>Sisa Tagihan Tunai:</span>
+                                                            <span>Rp {netInvoiceAmount.toLocaleString()}</span>
+                                                        </div>
+                                                        
+                                                        {excessPayment > 0 && (
+                                                            <div className="flex justify-between text-emerald-600 font-bold bg-emerald-50 dark:bg-emerald-950/15 p-1.5 rounded-sm">
+                                                                <span>Kelebihan (Masuk Saldo):</span>
+                                                                <span>+Rp {excessPayment.toLocaleString()}</span>
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {cashShortfall > 0 && (
+                                                            <div className="flex justify-between text-rose-600 font-bold bg-rose-50 dark:bg-rose-950/15 p-1.5 rounded-sm">
+                                                                <span>Kekurangan Bayar:</span>
+                                                                <span>Rp {cashShortfall.toLocaleString()}</span>
+                                                            </div>
+                                                        )}
+
+                                                        <div className="flex justify-between text-indigo-600 font-bold border-t border-slate-100 dark:border-slate-800/80 pt-2">
+                                                            <span>Saldo Akhir Pelanggan:</span>
+                                                            <span>Rp {projectedNewBalance.toLocaleString()}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Form Actions */}
+                                                    <div className="pt-2 flex gap-3">
+                                                        <button 
+                                                            onClick={() => setPayingInvoice(null)}
+                                                            className="flex-1 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-bold rounded-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-xs"
+                                                        >
+                                                            Kembali
+                                                        </button>
+                                                        <button 
+                                                            onClick={handlePayInvoice}
+                                                            disabled={payLoading || cashShortfall > 0}
+                                                            className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-sm shadow-lg shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50 text-xs"
+                                                        >
+                                                            {payLoading ? 'Memproses...' : 'Bayar Sekarang'}
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             )}
                                         </div>
-                                    </div>
-                                ) : unpaidInvoices.length === 0 ? (
+                                    );
+                                })() ) : unpaidInvoices.length === 0 ? (
                                     <div className="py-10 text-center bg-emerald-50/30 dark:bg-emerald-900/10 rounded-sm border border-dashed border-emerald-200 dark:border-emerald-900/30">
                                         <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
                                         <p className="text-emerald-600 dark:text-emerald-400 font-bold text-base">Luar biasa! Semua tagihan telah lunas.</p>
