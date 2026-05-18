@@ -140,6 +140,10 @@ class AccountingService
             }
         }
 
+        if (empty($entries)) {
+            return null;
+        }
+
         return $this->createJournal(
             $cashFlow->transaction_date,
             "Cash Flow: " . $cashFlow->description,

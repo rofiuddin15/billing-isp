@@ -132,7 +132,8 @@ class PaymentController extends Controller
             $targetInvoiceAmount = $remainingInvoiceAmount;
         }
 
-        if ($targetInvoiceAmount <= 0) {
+        $isApplyingDiscount = $discount > (float)($payment->discount ?? 0);
+        if ($targetInvoiceAmount <= 0 && !$isApplyingDiscount) {
             return response()->json(['message' => 'Tagihan ini sudah diselesaikan atau nominal target bayar tidak valid.'], 422);
         }
 
@@ -156,7 +157,7 @@ class PaymentController extends Controller
 
         $excess = $cashPaid - $remainingTargetAmount;
 
-        return DB::transaction(function () use ($payment, $customer, $deductedFromBalance, $cashPaid, $excess, $discount, $targetInvoiceAmount, $paymentType) {
+        return DB::transaction(function () use ($payment, $customer, $deductedFromBalance, $cashPaid, $excess, $discount, $targetInvoiceAmount, $paymentType, $isApplyingDiscount) {
             // Update customer's balance
             if ($deductedFromBalance > 0 || $excess > 0) {
                 $customer->balance = (float)$customer->balance - $deductedFromBalance + $excess;
@@ -175,8 +176,8 @@ class PaymentController extends Controller
                 'confirmed_by' => auth('api')->id(),
             ]);
 
-            // Record to CashFlow (logged even if cashPaid is 0 but balance is used)
-            if ($cashPaid > 0 || $deductedFromBalance > 0) {
+            // Record to CashFlow (logged if cashPaid > 0, balance is used, or a new discount is applied)
+            if ($cashPaid > 0 || $deductedFromBalance > 0 || $isApplyingDiscount) {
                 $category = \App\Models\TransactionCategory::firstOrCreate(['name' => 'Bulanan']);
                 
                 $descParts = [];
