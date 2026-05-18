@@ -13,16 +13,16 @@ import { toast } from 'react-toastify';
 import DataTable from '../../components/DataTable';
 
 const StatCard = ({ title, amount, icon: Icon, colorClass, subtext }) => (
-    <div className="bg-white dark:bg-slate-900 p-6 rounded-sm border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-            <div className={`p-4 rounded-xl ${colorClass} bg-opacity-10 text-opacity-100`}>
-                <Icon className="w-6 h-6" />
+    <div className="bg-white dark:bg-slate-900 p-4 rounded-sm border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between gap-3 h-full">
+        <div className="flex items-center gap-3">
+            <div className={`p-3 rounded-lg ${colorClass} bg-opacity-10 text-opacity-100 flex-shrink-0`}>
+                <Icon className="w-5 h-5" />
             </div>
             <div>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{title}</p>
-                <p className="text-2xl font-black text-slate-800 dark:text-white mt-1">Rp {Number(amount).toLocaleString('id-ID')}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{title}</p>
+                <p className="text-lg font-black text-slate-800 dark:text-white mt-0.5">Rp {Number(amount).toLocaleString('id-ID')}</p>
                 {subtext && (
-                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5 font-medium">{subtext}</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 font-medium">{subtext}</p>
                 )}
             </div>
         </div>
@@ -180,19 +180,19 @@ const CashFlowList = () => {
     ], []);
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-4 animate-in fade-in duration-500">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Arus Kas</h2>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm">Pantau pemasukan dan pengeluaran Anda.</p>
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white leading-tight">Arus Kas</h2>
+                    <p className="text-slate-500 dark:text-slate-400 text-xs">Pantau pemasukan dan pengeluaran Anda.</p>
                 </div>
             </div>
 
             {/* Filter Bar */}
-            <div className="bg-white dark:bg-slate-900 p-4 rounded-sm border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all">
+            <div className="bg-white dark:bg-slate-900 p-3.5 rounded-sm border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 transition-all">
                 <div className="flex items-center gap-2">
                     <Filter className="w-4 h-4 text-indigo-500" />
-                    <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Filter Periode:</span>
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Filter Periode:</span>
                 </div>
                 
                 <div className="flex flex-wrap items-center gap-2">
@@ -205,7 +205,7 @@ const CashFlowList = () => {
                         <button
                             key={opt.value}
                             onClick={() => setFilterType(opt.value)}
-                            className={`px-4 py-2 rounded-sm text-xs font-bold transition-all border ${
+                            className={`px-3 py-1.5 rounded-sm text-[10px] font-bold transition-all border ${
                                 filterType === opt.value
                                     ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-500/20'
                                     : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900'
@@ -219,19 +219,19 @@ const CashFlowList = () => {
                 {filterType === 'custom' && (
                     <div className="flex items-center gap-2 animate-in slide-in-from-right duration-300">
                         <div className="relative">
-                            <span className="absolute left-3 top-2 text-[10px] text-slate-400 font-bold uppercase">Dari</span>
+                            <span className="absolute left-3 top-2 text-[9px] text-slate-400 font-bold uppercase">Dari</span>
                             <input
                                 type="date"
-                                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-12 pr-3 py-1.5 text-xs text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500"
+                                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-11 pr-2 py-1 text-[10px] text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500"
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
                             />
                         </div>
                         <div className="relative">
-                            <span className="absolute left-3 top-2 text-[10px] text-slate-400 font-bold uppercase">Sampai</span>
+                            <span className="absolute left-3 top-2 text-[9px] text-slate-400 font-bold uppercase">Sampai</span>
                             <input
                                 type="date"
-                                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-16 pr-3 py-1.5 text-xs text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500"
+                                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-15 pr-2 py-1 text-[10px] text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500"
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
                             />
@@ -240,26 +240,32 @@ const CashFlowList = () => {
                 )}
             </div>
 
-            {/* Financial Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Financial Stats Grid - Compact 4-Card Layout */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard 
-                    title={`Total Pemasukan ${filterType === 'this_month' ? '(Bulan Ini)' : filterType === 'last_month' ? '(Bulan Lalu)' : filterType === 'custom' ? '(Filter)' : ''}`} 
+                    title={`Pemasukan ${filterType === 'this_month' ? '(Bulan Ini)' : filterType === 'last_month' ? '(Bulan Lalu)' : filterType === 'custom' ? '(Filter)' : ''}`} 
                     amount={stats.total_income} 
                     icon={TrendingUp} 
                     colorClass="text-emerald-600 bg-emerald-600" 
                 />
                 <StatCard 
-                    title={`Total Pengeluaran ${filterType === 'this_month' ? '(Bulan Ini)' : filterType === 'last_month' ? '(Bulan Lalu)' : filterType === 'custom' ? '(Filter)' : ''}`} 
+                    title={`Pengeluaran ${filterType === 'this_month' ? '(Bulan Ini)' : filterType === 'last_month' ? '(Bulan Lalu)' : filterType === 'custom' ? '(Filter)' : ''}`} 
                     amount={stats.total_expense} 
                     icon={TrendingDown} 
                     colorClass="text-rose-600 bg-rose-600" 
+                />
+                <StatCard 
+                    title="Pengeluaran Bulan Ini" 
+                    amount={stats.this_month_expense} 
+                    icon={TrendingDown} 
+                    colorClass="text-pink-600 bg-pink-600" 
                 />
                 <StatCard 
                     title={filterType === 'all_time' ? "Saldo Saat Ini" : "Saldo Periode Ini"} 
                     amount={stats.balance} 
                     icon={Wallet} 
                     colorClass="text-indigo-600 bg-indigo-600"
-                    subtext={filterType !== 'all_time' ? `Total Keseluruhan: Rp ${Number(stats.lifetime_balance || 0).toLocaleString('id-ID')}` : null}
+                    subtext={filterType !== 'all_time' ? `Total: Rp ${Number(stats.lifetime_balance || 0).toLocaleString('id-ID')}` : null}
                 />
             </div>
 

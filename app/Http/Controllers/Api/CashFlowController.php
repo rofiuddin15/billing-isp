@@ -80,11 +80,25 @@ class CashFlowController extends Controller
         $lifetimeIncome = CashFlow::where('type', 'income')->sum('amount');
         $lifetimeExpense = CashFlow::where('type', 'expense')->sum('amount');
 
+        // Calculate current calendar month boundaries
+        $startOfMonth = now()->startOfMonth()->toDateString();
+        $endOfMonth = now()->endOfMonth()->toDateString();
+
+        $thisMonthIncome = CashFlow::where('type', 'income')
+            ->whereBetween('transaction_date', [$startOfMonth, $endOfMonth])
+            ->sum('amount');
+
+        $thisMonthExpense = CashFlow::where('type', 'expense')
+            ->whereBetween('transaction_date', [$startOfMonth, $endOfMonth])
+            ->sum('amount');
+
         return response()->json([
             'total_income' => (float)$income,
             'total_expense' => (float)$expense,
             'balance' => (float)($income - $expense),
-            'lifetime_balance' => (float)($lifetimeIncome - $lifetimeExpense)
+            'lifetime_balance' => (float)($lifetimeIncome - $lifetimeExpense),
+            'this_month_income' => (float)$thisMonthIncome,
+            'this_month_expense' => (float)$thisMonthExpense
         ]);
     }
 
