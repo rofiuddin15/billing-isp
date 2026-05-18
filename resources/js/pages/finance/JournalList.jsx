@@ -7,12 +7,25 @@ import DataTable from '../../components/DataTable';
 const JournalList = () => {
     const [journals, setJournals] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
+    const [pagination, setPagination] = useState({
+        currentPage: 1,
+        lastPage: 1,
+        pageSize: 10,
+        total: 0
+    });
 
-    const fetchJournals = async () => {
+    const fetchJournals = async (page = 1, perPage = 10, querySearch = '') => {
         setLoading(true);
         try {
-            const res = await apiFetch('/api/journals');
-            setJournals(res.data);
+            const res = await apiFetch(`/api/journals?page=${page}&per_page=${perPage}&search=${querySearch}`);
+            setJournals(res.data || []);
+            setPagination({
+                currentPage: res.current_page || 1,
+                lastPage: res.last_page || 1,
+                pageSize: Number(res.per_page || perPage),
+                total: res.total || 0
+            });
         } catch (error) {
             console.error(error);
         }
@@ -20,8 +33,8 @@ const JournalList = () => {
     };
 
     useEffect(() => {
-        fetchJournals();
-    }, []);
+        fetchJournals(1, pagination.pageSize, search);
+    }, [search]);
 
     const columns = [
         {
@@ -128,6 +141,17 @@ const JournalList = () => {
                 renderSubComponent={renderSubComponent}
                 searchPlaceholder="Search journals..."
                 exportFileName="general-ledger"
+                manualPagination={true}
+                pageCount={pagination.lastPage}
+                paginationState={{
+                    pageIndex: pagination.currentPage - 1,
+                    pageSize: pagination.pageSize
+                }}
+                onPaginationChange={(updater) => {
+                    const next = typeof updater === 'function' ? updater({ pageIndex: pagination.currentPage - 1, pageSize: pagination.pageSize }) : updater;
+                    fetchJournals(next.pageIndex + 1, next.pageSize, search);
+                }}
+                onSearchChange={(val) => setSearch(val)}
             />
         </div>
     );
