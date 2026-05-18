@@ -53,7 +53,11 @@ class CustomerImport implements ToModel, WithHeadingRow, WithValidation
         $cashPaid = isset($row['jumlah_bayar']) ? (float)$row['jumlah_bayar'] : null;
         
         $excess = 0;
-        if ($cashPaid !== null && $cashPaid > $packagePrice) {
+        if (isset($row['saldo'])) {
+            $excess = (float)$row['saldo'];
+        } elseif (isset($row['balance'])) {
+            $excess = (float)$row['balance'];
+        } elseif ($cashPaid !== null && $cashPaid > $packagePrice) {
             $excess = $cashPaid - $packagePrice;
         }
 
