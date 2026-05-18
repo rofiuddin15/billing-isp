@@ -75,6 +75,9 @@ Route::group(['middleware' => 'auth:api'], function() {
 
     Route::get('activity-logs', [\App\Http\Controllers\Api\ActivityLogController::class, 'index']);
     
+    Route::get('reports/profit-loss', [\App\Http\Controllers\Api\ReportController::class, 'profitLoss']);
+    Route::get('reports/trial-balance', [\App\Http\Controllers\Api\ReportController::class, 'trialBalance']);
+    
     Route::apiResource('complaints', \App\Http\Controllers\Api\ComplaintController::class);
 });
 

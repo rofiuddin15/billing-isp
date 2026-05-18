@@ -27,6 +27,7 @@ import Settings from './pages/Settings';
 import AuditTrail from './pages/system/AuditTrail';
 import CustomerDashboard from './pages/CustomerDashboard';
 import FinanceSettings from './pages/finance/FinanceSettings';
+import FinancialReports from './pages/finance/FinancialReports';
 import ComplaintList from './pages/support/ComplaintList';
 
 import { ToastContainer } from 'react-toastify';
@@ -54,6 +55,7 @@ root.render(
                     <Route path="finance" element={<CashFlowList />} />
                     <Route path="finance/coa" element={<COAList />} />
                     <Route path="finance/ledger" element={<JournalList />} />
+                    <Route path="finance/reports" element={<FinancialReports />} />
                     <Route path="finance/settings" element={<FinanceSettings />} />
                     <Route path="master/users" element={<UserList />} />
                     <Route path="master/roles" element={<RoleManagement />} />
