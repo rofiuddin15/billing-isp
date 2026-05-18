@@ -59,7 +59,12 @@ class AccountingService
         if (!$categoryAccount) {
             // Fallback to default accounts based on type
             if ($cashFlow->type === 'income') {
-                $categoryAccount = Account::where('code', '4100')->first(); // Sales Revenue
+                // If it is monthly subscription payment, prefer 4101, otherwise fallback to 4100
+                if (str_contains(strtolower($cashFlow->description), 'payment')) {
+                    $categoryAccount = Account::where('code', '4101')->first() ?? Account::where('code', '4100')->first();
+                } else {
+                    $categoryAccount = Account::where('code', '4100')->first(); // Sales Revenue
+                }
             } else {
                 $categoryAccount = Account::where('code', '5105')->first(); // Operational Expense
             }
@@ -71,14 +76,56 @@ class AccountingService
 
         $entries = [];
 
-        if ($cashFlow->type === 'income') {
-            // Debit Cash (+Asset), Credit Revenue (+Revenue)
-            $entries[] = ['account_id' => $cashAccount->id, 'debit' => $cashFlow->amount];
-            $entries[] = ['account_id' => $categoryAccount->id, 'credit' => $cashFlow->amount];
+        // Check if CashFlow is associated with a customer monthly subscription Payment
+        $payment = null;
+        if ($cashFlow->reference_id && str_contains(strtolower($cashFlow->description), 'payment')) {
+            $payment = \App\Models\Payment::find($cashFlow->reference_id);
+        }
+
+        if ($payment && $cashFlow->type === 'income') {
+            // Find or create the Deferred Revenue account (Pendapatan Diterima di Muka) under current liabilities
+            $deferredAccount = Account::firstOrCreate(
+                ['code' => '2102'],
+                [
+                    'name' => 'Pendapatan Diterima di Muka',
+                    'type' => 'liability',
+                    'parent_id' => 6 // parent LIABILITIES
+                ]
+            );
+
+            $invoiceAmt = (float)$payment->amount;
+            $cashAmt = (float)$cashFlow->amount;
+            $difference = $cashAmt - $invoiceAmt;
+
+            // 1. Debit Cash (only for actual cash received physically)
+            if ($cashAmt > 0) {
+                $entries[] = ['account_id' => $cashAccount->id, 'debit' => $cashAmt];
+            }
+
+            // 2. Credit Sales Revenue (always recognize the full package price as revenue)
+            if ($invoiceAmt > 0) {
+                $entries[] = ['account_id' => $categoryAccount->id, 'credit' => $invoiceAmt];
+            }
+
+            // 3. Balance Adjustments
+            if ($difference > 0) {
+                // Excess payment: Credit Deferred Revenue (increases liability)
+                $entries[] = ['account_id' => $deferredAccount->id, 'credit' => $difference];
+            } elseif ($difference < 0) {
+                // Balance used: Debit Deferred Revenue (decreases liability)
+                $entries[] = ['account_id' => $deferredAccount->id, 'debit' => abs($difference)];
+            }
         } else {
-            // Debit Expense (+Expense), Credit Cash (-Asset)
-            $entries[] = ['account_id' => $categoryAccount->id, 'debit' => $cashFlow->amount];
-            $entries[] = ['account_id' => $cashAccount->id, 'credit' => $cashFlow->amount];
+            // Normal fallback transaction
+            if ($cashFlow->type === 'income') {
+                // Debit Cash (+Asset), Credit Revenue (+Revenue)
+                $entries[] = ['account_id' => $cashAccount->id, 'debit' => $cashFlow->amount];
+                $entries[] = ['account_id' => $categoryAccount->id, 'credit' => $cashFlow->amount];
+            } else {
+                // Debit Expense (+Expense), Credit Cash (-Asset)
+                $entries[] = ['account_id' => $categoryAccount->id, 'debit' => $cashFlow->amount];
+                $entries[] = ['account_id' => $cashAccount->id, 'credit' => $cashFlow->amount];
+            }
         }
 
         return $this->createJournal(

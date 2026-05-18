@@ -49,7 +49,16 @@ class CustomerImport implements ToModel, WithHeadingRow, WithValidation
             $user->assignRole($role);
         }
 
-        return new Customer([
+        $packagePrice = $package ? (float) $package->price : 0;
+        $cashPaid = isset($row['jumlah_bayar']) ? (float)$row['jumlah_bayar'] : null;
+        
+        $excess = 0;
+        if ($cashPaid !== null && $cashPaid > $packagePrice) {
+            $excess = $cashPaid - $packagePrice;
+        }
+
+        // Direct Customer insertion so we have the ID instantly
+        $customer = Customer::create([
             'user_id'            => $user->id,
             'customer_code'      => $customerCode,
             'name'               => $name,
@@ -61,7 +70,35 @@ class CustomerImport implements ToModel, WithHeadingRow, WithValidation
             'status'             => $this->mapStatus($row['status'] ?? 'active'),
             'latitude'           => $row['latitude'] ?? null,
             'longitude'          => $row['longitude'] ?? null,
+            'balance'            => $excess,
         ]);
+
+        // If Cash Paid is recorded, write the historical invoice & cashflow
+        if ($cashPaid !== null) {
+            $period = now()->subMonth()->format('Y-m'); // e.g. 2026-04 if current is 2026-05
+            
+            $payment = \App\Models\Payment::create([
+                'customer_id' => $customer->id,
+                'invoice_number' => 'INV-MIG-' . strtoupper(uniqid()),
+                'period' => $period,
+                'amount' => $packagePrice,
+                'status' => 'paid',
+                'confirmed_by' => null // system migrated
+            ]);
+
+            $category = \App\Models\TransactionCategory::firstOrCreate(['name' => 'Bulanan']);
+            \App\Models\CashFlow::create([
+                'transaction_date' => now()->subMonth()->toDateString(),
+                'type' => 'income',
+                'category_id' => $category->id,
+                'amount' => $cashPaid,
+                'description' => "Migrated Payment for {$customer->name} ({$period}) - Cash: Rp " . number_format($cashPaid),
+                'reference_id' => $payment->id,
+                'created_by' => null,
+            ]);
+        }
+
+        return null;
     }
 
     public function rules(): array

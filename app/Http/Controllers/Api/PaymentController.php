@@ -146,8 +146,8 @@ class PaymentController extends Controller
                 'confirmed_by' => auth('api')->id(),
             ]);
 
-            // Record to CashFlow (only actual cash/income is logged)
-            if ($cashPaid > 0) {
+            // Record to CashFlow (logged even if cashPaid is 0 but balance is used)
+            if ($cashPaid > 0 || $deductedFromBalance > 0) {
                 $category = \App\Models\TransactionCategory::firstOrCreate(['name' => 'Bulanan']);
                 CashFlow::create([
                     'transaction_date' => now()->toDateString(),
