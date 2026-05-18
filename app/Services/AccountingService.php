@@ -95,7 +95,7 @@ class AccountingService
 
             $cashAmt = (float)$cashFlow->amount;
 
-            // Extract dynamic cash, balance used, and excess values from description text
+            // Extract dynamic cash, balance used, excess, and discount values from description text
             $deductedFromBalance = 0;
             if (preg_match('/Saldo:\s*Rp\s*([0-9.,]+)/i', $cashFlow->description, $matches)) {
                 $deductedFromBalance = (float)str_replace(',', '', $matches[1]);
@@ -106,19 +106,31 @@ class AccountingService
                 $excess = (float)str_replace(',', '', $matches[1]);
             }
 
+            $discount = 0;
+            if (preg_match('/Diskon:\s*Rp\s*([0-9.,]+)/i', $cashFlow->description, $matches)) {
+                $discount = (float)str_replace(',', '', $matches[1]);
+            }
+
             $settledInvoiceAmt = max(0, $cashAmt - $excess + $deductedFromBalance);
+            $totalRevenueAmt = $settledInvoiceAmt + $discount;
+            $discountAccount = Account::where('code', '5105')->first(); // Operational/Discount Expense
 
             // 1. Debit Cash (only for actual cash received physically)
             if ($cashAmt > 0) {
                 $entries[] = ['account_id' => $cashAccount->id, 'debit' => $cashAmt];
             }
 
-            // 2. Credit Sales Revenue (credit exactly the settled amount on the invoice)
-            if ($settledInvoiceAmt > 0) {
-                $entries[] = ['account_id' => $categoryAccount->id, 'credit' => $settledInvoiceAmt];
+            // 2. Debit Sales Discount (Operational Expense)
+            if ($discount > 0 && $discountAccount) {
+                $entries[] = ['account_id' => $discountAccount->id, 'debit' => $discount];
             }
 
-            // 3. Balance Adjustments (using Deferred Revenue)
+            // 3. Credit Monthly Subscription Revenue (credit the full subscription price including discount)
+            if ($totalRevenueAmt > 0) {
+                $entries[] = ['account_id' => $categoryAccount->id, 'credit' => $totalRevenueAmt];
+            }
+
+            // 4. Balance Adjustments (using Deferred Revenue)
             if ($excess > 0) {
                 // Excess payment: Credit Deferred Revenue (increases liability)
                 $entries[] = ['account_id' => $deferredAccount->id, 'credit' => $excess];
