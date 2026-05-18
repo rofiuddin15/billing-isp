@@ -59,7 +59,11 @@ const ReceiptService = {
             theme: 'plain',
             styles: { fontSize: 8, cellPadding: 1 },
             head: [['Deskripsi', 'Jumlah']],
-            body: [
+            body: payment.discount && Number(payment.discount) > 0 ? [
+                [`Tagihan Bulan ${payment.period}`, `Rp ${Number(payment.amount).toLocaleString('id-ID')}`],
+                [`Diskon Potongan`, `-Rp ${Number(payment.discount).toLocaleString('id-ID')}`],
+                [{ content: 'Total Pembayaran', styles: { fontStyle: 'bold' } }, { content: `Rp ${Number(payment.amount - payment.discount).toLocaleString('id-ID')}`, styles: { fontStyle: 'bold' } }]
+            ] : [
                 [`Tagihan Bulan ${payment.period}`, `Rp ${Number(payment.amount).toLocaleString('id-ID')}`],
                 [{ content: 'Total Pembayaran', styles: { fontStyle: 'bold' } }, { content: `Rp ${Number(payment.amount).toLocaleString('id-ID')}`, styles: { fontStyle: 'bold' } }]
             ],

@@ -93,7 +93,8 @@ class AccountingService
                 ]
             );
 
-            $invoiceAmt = (float)$payment->amount;
+            $discount = (float)($payment->discount ?? 0);
+            $invoiceAmt = max(0, (float)$payment->amount - $discount);
             $cashAmt = (float)$cashFlow->amount;
             $difference = $cashAmt - $invoiceAmt;
 

@@ -109,31 +109,35 @@ class PaymentController extends Controller
         $request->validate([
             'amount_paid' => 'nullable|numeric|min:0',
             'use_balance' => 'nullable',
+            'discount' => 'nullable|numeric|min:0',
         ]);
 
         $useBalance = filter_var($request->input('use_balance'), FILTER_VALIDATE_BOOLEAN);
+        $discount = $request->has('discount') ? (float)$request->input('discount') : 0;
+        
         $invoiceAmount = (float) $payment->amount;
+        $netInvoiceAmount = max(0, $invoiceAmount - $discount);
         $currentBalance = (float) $customer->balance;
 
         $deductedFromBalance = 0;
         if ($useBalance) {
-            $deductedFromBalance = min($invoiceAmount, $currentBalance);
+            $deductedFromBalance = min($netInvoiceAmount, $currentBalance);
         }
 
-        $remainingInvoiceAmount = $invoiceAmount - $deductedFromBalance;
+        $remainingInvoiceAmount = max(0, $netInvoiceAmount - $deductedFromBalance);
 
         // Default amount paid to the remaining amount if not specified
         $cashPaid = $request->has('amount_paid') ? (float) $request->amount_paid : $remainingInvoiceAmount;
 
         if ($cashPaid < $remainingInvoiceAmount) {
             return response()->json([
-                'message' => 'Jumlah uang tunai yang dibayar kurang dari sisa tagihan. Sisa tagihan setelah saldo: Rp ' . number_format($remainingInvoiceAmount)
+                'message' => 'Jumlah uang tunai yang dibayar kurang dari sisa tagihan setelah diskon. Sisa tagihan setelah saldo: Rp ' . number_format($remainingInvoiceAmount)
             ], 422);
         }
 
         $excess = $cashPaid - $remainingInvoiceAmount;
 
-        return DB::transaction(function () use ($payment, $customer, $deductedFromBalance, $cashPaid, $excess) {
+        return DB::transaction(function () use ($payment, $customer, $deductedFromBalance, $cashPaid, $excess, $discount) {
             // Update customer's balance
             if ($deductedFromBalance > 0 || $excess > 0) {
                 $customer->balance = (float)$customer->balance - $deductedFromBalance + $excess;
@@ -143,18 +147,29 @@ class PaymentController extends Controller
             // Update payment status
             $payment->update([
                 'status' => 'paid',
+                'discount' => $discount,
                 'confirmed_by' => auth('api')->id(),
             ]);
 
             // Record to CashFlow (logged even if cashPaid is 0 but balance is used)
             if ($cashPaid > 0 || $deductedFromBalance > 0) {
                 $category = \App\Models\TransactionCategory::firstOrCreate(['name' => 'Bulanan']);
+                
+                $descParts = [];
+                $descParts[] = "Cash: Rp " . number_format($cashPaid);
+                if ($deductedFromBalance > 0) {
+                    $descParts[] = "Saldo: Rp " . number_format($deductedFromBalance);
+                }
+                if ($discount > 0) {
+                    $descParts[] = "Diskon: Rp " . number_format($discount);
+                }
+                
                 CashFlow::create([
                     'transaction_date' => now()->toDateString(),
                     'type' => 'income',
                     'category_id' => $category->id,
                     'amount' => $cashPaid,
-                    'description' => "Payment for {$customer->name} ({$payment->period}) - Cash: Rp " . number_format($cashPaid) . ($deductedFromBalance > 0 ? " (Saldo: Rp " . number_format($deductedFromBalance) . ")" : ""),
+                    'description' => "Payment for {$customer->name} ({$payment->period}) - " . implode(', ', $descParts),
                     'reference_id' => $payment->id,
                     'created_by' => auth('api')->id(),
                 ]);
@@ -162,6 +177,9 @@ class PaymentController extends Controller
 
             // Log activity with details
             $logMsg = "Staff mengonfirmasi pembayaran tagihan {$payment->invoice_number} untuk pelanggan {$customer->name}.";
+            if ($discount > 0) {
+                $logMsg .= " Diskon: Rp " . number_format($discount) . ".";
+            }
             if ($deductedFromBalance > 0) {
                 $logMsg .= " Potong Saldo: Rp " . number_format($deductedFromBalance) . ".";
             }

@@ -8,7 +8,7 @@ class Payment extends Model
 {
     protected $fillable = [
         'customer_id', 'invoice_number', 'period', 'amount', 
-        'status', 'confirmed_by'
+        'discount', 'status', 'confirmed_by'
     ];
 
     public function customer()

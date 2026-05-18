@@ -51,16 +51,31 @@ const CustomerList = () => {
     // New Balance & Payment States
     const [useBalance, setUseBalance] = useState(false);
     const [amountPaid, setAmountPaid] = useState('');
+    const [discount, setDiscount] = useState('');
 
     useEffect(() => {
         if (payingInvoice) {
             setUseBalance(false);
+            setDiscount('');
             setAmountPaid(String(payingInvoice.amount || ''));
         } else {
             setUseBalance(false);
+            setDiscount('');
             setAmountPaid('');
         }
     }, [payingInvoice]);
+
+    // Dynamically adjust amountPaid based on discount and balance deductions
+    useEffect(() => {
+        if (payingInvoice) {
+            const invoiceAmt = Number(payingInvoice.amount || 0);
+            const custBal = Number(selectedCustomer?.balance || 0);
+            const discountVal = Number(discount || 0);
+            const netInvoiceAfterDiscount = Math.max(0, invoiceAmt - discountVal);
+            const maxBalanceUse = useBalance ? Math.min(netInvoiceAfterDiscount, custBal) : 0;
+            setAmountPaid(String(Math.max(0, netInvoiceAfterDiscount - maxBalanceUse)));
+        }
+    }, [discount, useBalance, payingInvoice, selectedCustomer]);
 
     useEffect(() => {
         dispatch(fetchCustomers({ page: 1 }));
@@ -132,7 +147,8 @@ const CustomerList = () => {
                 method: 'POST',
                 body: JSON.stringify({
                     amount_paid: amountPaid,
-                    use_balance: useBalance
+                    use_balance: useBalance,
+                    discount: discount
                 })
             });
             toast.success('Pembayaran berhasil dicatat');
@@ -414,9 +430,11 @@ const CustomerList = () => {
                                 ) : payingInvoice ? ( (() => {
                                     const invoiceAmt = Number(payingInvoice.amount || 0);
                                     const custBal = Number(selectedCustomer.balance || 0);
+                                    const discountVal = Number(discount || 0);
+                                    const netInvoiceAfterDiscount = Math.max(0, invoiceAmt - discountVal);
                                     
-                                    const maxBalanceUse = useBalance ? Math.min(invoiceAmt, custBal) : 0;
-                                    const netInvoiceAmount = Math.max(0, invoiceAmt - maxBalanceUse);
+                                    const maxBalanceUse = useBalance ? Math.min(netInvoiceAfterDiscount, custBal) : 0;
+                                    const netInvoiceAmount = Math.max(0, netInvoiceAfterDiscount - maxBalanceUse);
                                     
                                     const cashReceived = Number(amountPaid || 0);
                                     const excessPayment = Math.max(0, cashReceived - netInvoiceAmount);
@@ -436,9 +454,15 @@ const CustomerList = () => {
                                                         <span className="text-sm text-slate-500 font-medium">Nomor Invoice</span>
                                                         <span className="text-xs font-mono text-slate-400">{payingInvoice.invoice_number}</span>
                                                     </div>
+                                                    {payingInvoice.discount && Number(payingInvoice.discount) > 0 && (
+                                                        <div className="flex justify-between items-center pb-4 border-b border-slate-200 dark:border-slate-700">
+                                                            <span className="text-sm text-slate-500 font-medium">Diskon</span>
+                                                            <span className="text-sm font-bold text-indigo-600">-Rp {Number(payingInvoice.discount).toLocaleString()}</span>
+                                                        </div>
+                                                    )}
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-sm text-slate-500 font-medium">Total Tagihan</span>
-                                                        <span className="text-2xl font-black text-indigo-600">Rp {Number(payingInvoice.amount).toLocaleString()}</span>
+                                                        <span className="text-2xl font-black text-indigo-600">Rp {Number(payingInvoice.amount - (payingInvoice.discount || 0)).toLocaleString()}</span>
                                                     </div>
                                                     <div className="pt-4 flex gap-3">
                                                         <button 
@@ -466,23 +490,35 @@ const CustomerList = () => {
                                                         </div>
                                                     </div>
 
+                                                    {/* Discount Input Field */}
+                                                    <div className="space-y-1.5">
+                                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Diskon Potongan (Rp)</label>
+                                                        <div className="relative">
+                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">Rp</span>
+                                                            <input 
+                                                                type="number"
+                                                                min="0"
+                                                                max={invoiceAmt}
+                                                                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm pl-9 pr-3 py-2 text-sm font-black text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                                                                value={discount}
+                                                                onChange={(e) => setDiscount(e.target.value)}
+                                                                placeholder="Masukkan nominal diskon..."
+                                                            />
+                                                        </div>
+                                                    </div>
+
                                                     {/* Use Balance Checkbox */}
                                                     {custBal > 0 && (
                                                         <label className="flex items-center gap-3 p-3 bg-indigo-50/50 dark:bg-indigo-950/10 border border-indigo-100 dark:border-indigo-900/30 rounded-sm cursor-pointer select-none">
                                                             <input 
                                                                 type="checkbox"
                                                                 checked={useBalance}
-                                                                onChange={(e) => {
-                                                                    const checked = e.target.checked;
-                                                                    setUseBalance(checked);
-                                                                    const newDeduction = checked ? Math.min(invoiceAmt, custBal) : 0;
-                                                                    setAmountPaid(String(invoiceAmt - newDeduction));
-                                                                }}
+                                                                onChange={(e) => setUseBalance(e.target.checked)}
                                                                 className="w-4 h-4 text-indigo-600 border-slate-300 dark:border-slate-700 rounded focus:ring-indigo-500"
                                                             />
                                                             <div>
                                                                 <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Gunakan Saldo Aktif</p>
-                                                                <p className="text-[9px] text-slate-500 mt-0.5">Potong maksimal Rp {Math.min(invoiceAmt, custBal).toLocaleString()}</p>
+                                                                <p className="text-[9px] text-slate-500 mt-0.5">Potong maksimal Rp {Math.min(netInvoiceAfterDiscount, custBal).toLocaleString()}</p>
                                                             </div>
                                                         </label>
                                                     )}
@@ -506,6 +542,12 @@ const CustomerList = () => {
 
                                                     {/* Calculation Details */}
                                                     <div className="border-t border-dashed border-slate-200 dark:border-slate-800 pt-3.5 space-y-2 text-xs">
+                                                        {discountVal > 0 && (
+                                                            <div className="flex justify-between text-slate-500">
+                                                                <span>Diskon Potongan:</span>
+                                                                <span className="font-bold text-indigo-600">-Rp {discountVal.toLocaleString()}</span>
+                                                            </div>
+                                                        )}
                                                         {useBalance && (
                                                             <div className="flex justify-between text-slate-500">
                                                                 <span>Potong dari Saldo:</span>
