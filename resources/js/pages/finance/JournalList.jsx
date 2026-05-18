@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import apiFetch from '../../utils/api';
-import { FileText, ChevronDown, ChevronRight } from 'lucide-react';
+import { FileText, ChevronDown, ChevronRight, Filter, Calendar } from 'lucide-react';
 import Badge from '../../components/Badge';
 import DataTable from '../../components/DataTable';
 
@@ -15,10 +15,50 @@ const JournalList = () => {
         total: 0
     });
 
-    const fetchJournals = async (page = 1, perPage = 10, querySearch = '') => {
+    // Period Filters State
+    const [filterType, setFilterType] = useState('this_month'); // Default is 'this_month' (Bulan Ini)
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+
+    // Helper to calculate local ISO-formatted date range
+    const getDateRangeForFilter = (type, customStart, customEnd) => {
+        const now = new Date();
+        let start = '';
+        let end = '';
+
+        const formatDateLocal = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        if (type === 'this_month') {
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            start = formatDateLocal(firstDay);
+            end = formatDateLocal(lastDay);
+        } else if (type === 'last_month') {
+            const firstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
+            start = formatDateLocal(firstDay);
+            end = formatDateLocal(lastDay);
+        } else if (type === 'custom') {
+            start = customStart;
+            end = customEnd;
+        }
+
+        return { start, end };
+    };
+
+    const activeRange = useMemo(() => {
+        return getDateRangeForFilter(filterType, startDate, endDate);
+    }, [filterType, startDate, endDate]);
+
+    const fetchJournals = async (page = 1, perPage = 10, querySearch = '', start = '', end = '') => {
         setLoading(true);
         try {
-            const res = await apiFetch(`/api/journals?page=${page}&per_page=${perPage}&search=${querySearch}`);
+            const res = await apiFetch(`/api/journals?page=${page}&per_page=${perPage}&search=${querySearch}&start_date=${start}&end_date=${end}`);
             setJournals(res.data || []);
             setPagination({
                 currentPage: res.current_page || 1,
@@ -33,8 +73,11 @@ const JournalList = () => {
     };
 
     useEffect(() => {
-        fetchJournals(1, pagination.pageSize, search);
-    }, [search]);
+        if (filterType === 'custom' && (!startDate || !endDate)) {
+            return;
+        }
+        fetchJournals(1, pagination.pageSize, search, activeRange.start, activeRange.end);
+    }, [filterType, startDate, endDate, activeRange, search]);
 
     const columns = [
         {
@@ -128,10 +171,64 @@ const JournalList = () => {
     );
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
-            <div>
-                <h2 className="text-2xl font-bold text-slate-800 dark:text-white">General Ledger</h2>
-                <p className="text-slate-500 dark:text-slate-400 text-sm">View all accounting journal entries.</p>
+        <div className="space-y-4 animate-in fade-in duration-500">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white leading-tight">General Ledger</h2>
+                    <p className="text-slate-500 dark:text-slate-400 text-xs">View all accounting journal entries.</p>
+                </div>
+            </div>
+
+            {/* Filter Bar */}
+            <div className="bg-white dark:bg-slate-900 p-3.5 rounded-sm border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 transition-all">
+                <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-indigo-500" />
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Filter Periode:</span>
+                </div>
+                
+                <div className="flex flex-wrap items-center gap-2">
+                    {[
+                        { value: 'this_month', label: 'Bulan Ini' },
+                        { value: 'last_month', label: 'Bulan Lalu' },
+                        { value: 'all_time', label: 'Semua Waktu' },
+                        { value: 'custom', label: 'Kustom Tanggal' }
+                    ].map((opt) => (
+                        <button
+                            key={opt.value}
+                            onClick={() => setFilterType(opt.value)}
+                            className={`px-3 py-1.5 rounded-sm text-[10px] font-bold transition-all border ${
+                                filterType === opt.value
+                                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-500/20'
+                                    : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900'
+                            }`}
+                        >
+                            {opt.label}
+                        </button>
+                    ))}
+                </div>
+
+                {filterType === 'custom' && (
+                    <div className="flex items-center gap-2 animate-in slide-in-from-right duration-300">
+                        <div className="relative">
+                            <span className="absolute left-3 top-2 text-[9px] text-slate-400 font-bold uppercase">Dari</span>
+                            <input
+                                type="date"
+                                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-11 pr-2 py-1 text-[10px] text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                            />
+                        </div>
+                        <div className="relative">
+                            <span className="absolute left-3 top-2 text-[9px] text-slate-400 font-bold uppercase">Sampai</span>
+                            <input
+                                type="date"
+                                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-15 pr-2 py-1 text-[10px] text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                )}
             </div>
 
             <DataTable 
@@ -149,7 +246,7 @@ const JournalList = () => {
                 }}
                 onPaginationChange={(updater) => {
                     const next = typeof updater === 'function' ? updater({ pageIndex: pagination.currentPage - 1, pageSize: pagination.pageSize }) : updater;
-                    fetchJournals(next.pageIndex + 1, next.pageSize, search);
+                    fetchJournals(next.pageIndex + 1, next.pageSize, search, activeRange.start, activeRange.end);
                 }}
                 onSearchChange={(val) => setSearch(val)}
             />
