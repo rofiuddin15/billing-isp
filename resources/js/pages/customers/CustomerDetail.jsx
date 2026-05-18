@@ -17,7 +17,8 @@ import {
     CheckCircle2,
     Clock,
     Hash,
-    ShieldCheck
+    ShieldCheck,
+    X
 } from 'lucide-react';
 import apiFetch from '../../utils/api';
 import Badge from '../../components/Badge';
@@ -30,6 +31,13 @@ const CustomerDetail = () => {
     const navigate = useNavigate();
     const [customer, setCustomer] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    // Payment Modal States
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [selectedInvoice, setSelectedInvoice] = useState(null);
+    const [useBalance, setUseBalance] = useState(false);
+    const [amountPaid, setAmountPaid] = useState('');
+    const [submittingPay, setSubmittingPay] = useState(false);
 
     const fetchCustomerData = async () => {
         try {
@@ -47,15 +55,31 @@ const CustomerDetail = () => {
         fetchCustomerData();
     }, [id]);
 
-    const handlePay = async (invoiceId) => {
-        if (confirm('Konfirmasi pembayaran untuk invoice ini?')) {
-            try {
-                await apiFetch(`/api/payments/${invoiceId}/pay`, { method: 'POST' });
-                toast.success('Pembayaran berhasil dicatat');
-                fetchCustomerData();
-            } catch (error) {
-                toast.error(error.message);
-            }
+    const openPaymentModal = (invoice) => {
+        setSelectedInvoice(invoice);
+        setUseBalance(false);
+        setAmountPaid(String(invoice.amount));
+        setShowPaymentModal(true);
+    };
+
+    const handlePaySubmit = async (e) => {
+        e.preventDefault();
+        setSubmittingPay(true);
+        try {
+            await apiFetch(`/api/payments/${selectedInvoice.id}/pay`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    amount_paid: amountPaid,
+                    use_balance: useBalance
+                })
+            });
+            toast.success('Pembayaran berhasil dicatat');
+            setShowPaymentModal(false);
+            fetchCustomerData();
+        } catch (error) {
+            toast.error(error.message || 'Gagal memproses pembayaran');
+        } finally {
+            setSubmittingPay(false);
         }
     };
 
@@ -155,6 +179,15 @@ const CustomerDetail = () => {
                                         <p className="text-base font-black text-indigo-600 dark:text-indigo-400 tracking-tight">{customer.monthly_package?.name || 'Belum pilih paket'}</p>
                                     </div>
                                 </div>
+                                <div className="flex items-start gap-4 border-t border-slate-50 dark:border-slate-800 pt-4">
+                                    <div className="p-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg text-emerald-600">
+                                        <CreditCard className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Saldo Aktif Pelanggan</p>
+                                        <p className="text-base font-black text-emerald-600 dark:text-emerald-400 tracking-tight">Rp {Number(customer.balance || 0).toLocaleString()}</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -173,31 +206,51 @@ const CustomerDetail = () => {
                 {/* Right Column: Billing History */}
                 <div className="lg:col-span-2 space-y-6">
                     {/* Summary Bar */}
-                    <div className={`p-8 rounded-sm flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden transition-all duration-500 ${totalUnpaid > 0 ? 'bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/30' : 'bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/30'}`}>
-                        <div className="flex items-center gap-6 relative z-10">
-                            <div className={`p-4 rounded-2xl shadow-lg transition-colors ${totalUnpaid > 0 ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-600 shadow-rose-200 dark:shadow-none' : 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 shadow-emerald-200 dark:shadow-none'}`}>
-                                {totalUnpaid > 0 ? <AlertCircle className="w-8 h-8" /> : <CheckCircle2 className="w-8 h-8" />}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Tunggakan Card */}
+                        <div className={`p-6 rounded-sm flex items-center justify-between gap-4 relative overflow-hidden transition-all duration-500 border ${totalUnpaid > 0 ? 'bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/30' : 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/30'}`}>
+                            <div className="flex items-center gap-4 relative z-10">
+                                <div className={`p-3 rounded-xl shadow-md transition-colors ${totalUnpaid > 0 ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-600 shadow-rose-200 dark:shadow-none' : 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 shadow-emerald-200 dark:shadow-none'}`}>
+                                    {totalUnpaid > 0 ? <AlertCircle className="w-6 h-6" /> : <CheckCircle2 className="w-6 h-6" />}
+                                </div>
+                                <div>
+                                    <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${totalUnpaid > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>Total Tunggakan</p>
+                                    <p className={`text-2xl font-black tabular-nums tracking-tight ${totalUnpaid > 0 ? 'text-rose-800 dark:text-rose-400' : 'text-emerald-800 dark:text-emerald-400'}`}>
+                                        Rp {Number(totalUnpaid).toLocaleString()}
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${totalUnpaid > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>Total Tunggakan Saat Ini</p>
-                                <p className={`text-4xl font-black tabular-nums tracking-tighter ${totalUnpaid > 0 ? 'text-rose-800 dark:text-rose-400' : 'text-emerald-800 dark:text-emerald-400'}`}>
-                                    Rp {Number(totalUnpaid).toLocaleString()}
-                                </p>
+                            <div className="relative z-10">
+                                {totalUnpaid > 0 ? (
+                                    <div className="px-3 py-1 bg-rose-600 text-white text-[9px] font-black uppercase tracking-widest rounded-full">
+                                        MENUNGGAK
+                                    </div>
+                                ) : (
+                                    <div className="px-3 py-1 bg-emerald-600 text-white text-[9px] font-black uppercase tracking-widest rounded-full">
+                                        LUNAS
+                                    </div>
+                                )}
                             </div>
                         </div>
-                        <div className="relative z-10 w-full sm:w-auto">
-                            {totalUnpaid > 0 ? (
-                                <div className="px-6 py-2.5 bg-rose-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-rose-600/30 flex items-center gap-2">
-                                    <Clock className="w-3.5 h-3.5" /> Segera Bayar
+
+                        {/* Saldo Card */}
+                        <div className="p-6 rounded-sm bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-900/30 flex items-center justify-between gap-4 relative overflow-hidden transition-all duration-500">
+                            <div className="flex items-center gap-4 relative z-10">
+                                <div className="p-3 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 shadow-md shadow-indigo-200 dark:shadow-none">
+                                    <CreditCard className="w-6 h-6" />
                                 </div>
-                            ) : (
-                                <div className="px-6 py-2.5 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-emerald-600/30 flex items-center gap-2">
-                                    <CheckCircle2 className="w-3.5 h-3.5" /> Lunas Sempurna
+                                <div>
+                                    <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1">Saldo Aktif</p>
+                                    <p className="text-2xl font-black text-indigo-800 dark:text-indigo-400 tabular-nums tracking-tight">
+                                        Rp {Number(customer.balance || 0).toLocaleString()}
+                                    </p>
                                 </div>
-                            )}
-                        </div>
-                        <div className={`absolute top-0 right-0 w-32 h-32 opacity-[0.03] pointer-events-none -mr-8 -mt-8 ${totalUnpaid > 0 ? 'text-rose-900' : 'text-emerald-900'}`}>
-                             {totalUnpaid > 0 ? <AlertCircle className="w-full h-full" /> : <CheckCircle2 className="w-full h-full" />}
+                            </div>
+                            <div className="relative z-10">
+                                <div className="px-3 py-1 bg-indigo-600 text-white text-[9px] font-black uppercase tracking-widest rounded-full">
+                                    SALDO
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -258,7 +311,7 @@ const CustomerDetail = () => {
                                                 <td className="px-8 py-6 text-right">
                                                     {inv.status === 'unpaid' && (
                                                         <button 
-                                                            onClick={() => handlePay(inv.id)}
+                                                            onClick={() => openPaymentModal(inv)}
                                                             className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-sm text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-600/20 active:scale-95 flex items-center gap-2 ml-auto"
                                                         >
                                                             <CreditCard className="w-3.5 h-3.5" /> Konfirmasi Bayar
@@ -287,6 +340,141 @@ const CustomerDetail = () => {
                     </div>
                 </div>
             </div>
+            {/* Interactive Payment Modal */}
+            {showPaymentModal && selectedInvoice && (() => {
+                const invoiceAmt = Number(selectedInvoice.amount || 0);
+                const custBal = Number(customer.balance || 0);
+                
+                const maxBalanceUse = useBalance ? Math.min(invoiceAmt, custBal) : 0;
+                const netInvoiceAmount = Math.max(0, invoiceAmt - maxBalanceUse);
+                
+                const cashReceived = Number(amountPaid || 0);
+                const excessPayment = Math.max(0, cashReceived - netInvoiceAmount);
+                const projectedNewBalance = custBal - maxBalanceUse + excessPayment;
+                
+                const cashShortfall = netInvoiceAmount > cashReceived ? (netInvoiceAmount - cashReceived) : 0;
+
+                return (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+                        <div className="bg-white dark:bg-slate-900 rounded-sm shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+                            <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-indigo-600 text-white">
+                                <div>
+                                    <h3 className="text-lg font-bold">Konfirmasi Pembayaran</h3>
+                                    <p className="text-xs text-indigo-100 mt-0.5">{selectedInvoice.invoice_number} • Periode {selectedInvoice.period}</p>
+                                </div>
+                                <button onClick={() => setShowPaymentModal(false)} className="text-white hover:text-indigo-200 transition-colors">
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+                            
+                            <form onSubmit={handlePaySubmit} className="p-6 space-y-5">
+                                {/* Current Stats */}
+                                <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 dark:bg-slate-800/30 rounded-sm border border-slate-100 dark:border-slate-800/50">
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tagihan Asli</p>
+                                        <p className="text-lg font-black text-slate-700 dark:text-slate-200 mt-0.5">Rp {invoiceAmt.toLocaleString()}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Saldo Saat Ini</p>
+                                        <p className="text-lg font-black text-slate-700 dark:text-slate-200 mt-0.5">Rp {custBal.toLocaleString()}</p>
+                                    </div>
+                                </div>
+
+                                {/* Use Balance Checkbox */}
+                                {custBal > 0 && (
+                                    <label className="flex items-center gap-3 p-3.5 bg-indigo-50/50 dark:bg-indigo-950/10 border border-indigo-100 dark:border-indigo-900/30 rounded-sm cursor-pointer select-none">
+                                        <input 
+                                            type="checkbox"
+                                            checked={useBalance}
+                                            onChange={(e) => {
+                                                const checked = e.target.checked;
+                                                setUseBalance(checked);
+                                                // Pre-fill remaining amount automatically when check state changes
+                                                const newDeduction = checked ? Math.min(invoiceAmt, custBal) : 0;
+                                                setAmountPaid(String(invoiceAmt - newDeduction));
+                                            }}
+                                            className="w-4.5 h-4.5 text-indigo-600 border-slate-300 dark:border-slate-700 rounded focus:ring-indigo-500"
+                                        />
+                                        <div>
+                                            <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Gunakan Saldo Aktif</p>
+                                            <p className="text-[10px] text-slate-500 mt-0.5">Potong maksimal Rp {Math.min(invoiceAmt, custBal).toLocaleString()}</p>
+                                        </div>
+                                    </label>
+                                )}
+
+                                {/* Cash Input Field */}
+                                <div className="space-y-2">
+                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest">Jumlah Uang Tunai Diterima (Rp)</label>
+                                    <div className="relative">
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">Rp</span>
+                                        <input 
+                                            type="number"
+                                            required
+                                            min="0"
+                                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-10 pr-4 py-3 text-base font-black text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                                            value={amountPaid}
+                                            onChange={(e) => setAmountPaid(e.target.value)}
+                                            placeholder="Masukkan nominal tunai..."
+                                        />
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 italic">Masukkan jumlah yang dibayarkan secara fisik oleh pelanggan.</p>
+                                </div>
+
+                                {/* Calculation Details */}
+                                <div className="border-t border-dashed border-slate-200 dark:border-slate-800 pt-4 space-y-2.5 text-sm">
+                                    {useBalance && (
+                                        <div className="flex justify-between text-slate-500">
+                                            <span>Potong dari Saldo:</span>
+                                            <span className="font-bold text-rose-600 dark:text-rose-400">-Rp {maxBalanceUse.toLocaleString()}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between text-slate-700 dark:text-slate-300 font-bold">
+                                        <span>Sisa Tagihan Tunai:</span>
+                                        <span>Rp {netInvoiceAmount.toLocaleString()}</span>
+                                    </div>
+                                    
+                                    {excessPayment > 0 && (
+                                        <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/15 p-2 rounded-sm">
+                                            <span>Kelebihan (Masuk Saldo):</span>
+                                            <span>+Rp {excessPayment.toLocaleString()}</span>
+                                        </div>
+                                    )}
+                                    
+                                    {cashShortfall > 0 && (
+                                        <div className="flex justify-between text-rose-600 dark:text-rose-400 font-bold bg-rose-50 dark:bg-rose-950/15 p-2 rounded-sm">
+                                            <span>Kekurangan Bayar:</span>
+                                            <span>Rp {cashShortfall.toLocaleString()}</span>
+                                        </div>
+                                    )}
+
+                                    <div className="flex justify-between text-indigo-600 dark:text-indigo-400 font-bold border-t border-slate-100 dark:border-slate-800/80 pt-2.5">
+                                        <span>Saldo Akhir Pelanggan:</span>
+                                        <span>Rp {projectedNewBalance.toLocaleString()}</span>
+                                    </div>
+                                </div>
+
+                                {/* Form Actions */}
+                                <div className="pt-4 flex gap-3">
+                                    <button 
+                                        type="button"
+                                        onClick={() => setShowPaymentModal(false)}
+                                        className="flex-1 py-3 border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 font-bold rounded-sm text-sm transition-all"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button 
+                                        type="submit"
+                                        disabled={submittingPay || cashShortfall > 0}
+                                        className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-sm text-sm shadow-lg shadow-indigo-500/20 transition-all active:scale-95 disabled:opacity-50"
+                                    >
+                                        {submittingPay ? 'Memproses...' : 'Catat Pembayaran'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                );
+            })()}
         </div>
     );
 };

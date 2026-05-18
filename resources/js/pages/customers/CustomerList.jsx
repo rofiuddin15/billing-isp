@@ -160,9 +160,9 @@ const CustomerList = () => {
             header: 'Pelanggan',
             accessorKey: 'name',
             cell: info => (
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
-                        <MapPin className="w-5 h-5" />
+                <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 shrink-0">
+                        <MapPin className="w-4 h-4" />
                     </div>
                     <div>
                         <div className="text-sm font-bold text-slate-800 dark:text-white leading-none mb-1">{info.getValue()}</div>
@@ -175,6 +175,19 @@ const CustomerList = () => {
             header: 'Paket',
             accessorKey: 'monthly_package.name',
             cell: info => <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">{info.getValue() || 'Tanpa Paket'}</div>
+        },
+        {
+            header: 'Saldo',
+            accessorKey: 'balance',
+            cell: info => {
+                const amount = Number(info.getValue() || 0);
+                if (amount === 0) return <span className="text-slate-300">-</span>;
+                return (
+                    <div className="text-sm font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-1 rounded w-fit">
+                        Rp {amount.toLocaleString()}
+                    </div>
+                );
+            }
         },
         {
             header: 'Penagihan',
@@ -237,37 +250,37 @@ const CustomerList = () => {
             header: 'Aksi',
             id: 'actions',
             cell: info => (
-                <div className="flex items-center justify-end gap-2">
+                <div className="flex items-center justify-end gap-1.5">
                     <button 
                         onClick={(e) => openActionModal(e, info.row.original)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-sm text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 border border-slate-200"
+                        className="flex items-center gap-1 px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-sm text-[9px] font-black uppercase tracking-wider transition-all active:scale-95 border border-slate-200"
                     >
                         <AlertCircle className="w-3.5 h-3.5" /> Tindakan
                     </button>
                     <button 
                         onClick={(e) => openPayModal(e, info.row.original)}
-                        className="p-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-sm transition-all shadow-md shadow-emerald-500/10 active:scale-95"
+                        className="p-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-sm transition-all shadow-md shadow-emerald-500/10 active:scale-95"
                         title="Bayar Cepat"
                     >
-                        <CreditCard className="w-4 h-4" />
+                        <CreditCard className="w-3.5 h-3.5" />
                     </button>
                     <button 
                         onClick={(e) => {
                             e.stopPropagation();
                             navigate(`/customers/${info.row.original.id}/edit`);
                         }}
-                        className="p-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-sm transition-all shadow-md shadow-indigo-500/10 active:scale-95"
+                        className="p-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-sm transition-all shadow-md shadow-indigo-500/10 active:scale-95"
                     >
-                        <Edit2 className="w-4 h-4" />
+                        <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button 
                         onClick={(e) => {
                             e.stopPropagation();
                             if (confirm('Hapus pelanggan ini?')) dispatch(deleteCustomer(info.row.original.id));
                         }}
-                        className="p-2 bg-rose-500 hover:bg-rose-600 text-white rounded-sm transition-all shadow-md shadow-rose-500/10 active:scale-95"
+                        className="p-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-sm transition-all shadow-md shadow-rose-500/10 active:scale-95"
                     >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                     </button>
                 </div>
             )
