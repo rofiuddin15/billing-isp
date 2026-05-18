@@ -164,6 +164,11 @@ const CashFlowList = () => {
             cell: info => <span className="text-xs font-black uppercase tracking-widest text-slate-400">{info.getValue() || 'Tanpa Kategori'}</span>
         },
         {
+            header: 'Kasir',
+            accessorKey: 'creator.name',
+            cell: info => <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">{info.getValue() || 'Sistem'}</span>
+        },
+        {
             header: 'Deskripsi',
             accessorKey: 'description',
             cell: info => <span className="text-sm text-slate-700 dark:text-slate-300 line-clamp-1">{info.getValue()}</span>
