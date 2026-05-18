@@ -10,20 +10,24 @@ import {
 import { TrendingUp, TrendingDown, Wallet, Plus, Search, Filter, Calendar, X } from 'lucide-react';
 import Badge from '../../components/Badge';
 import { toast } from 'react-toastify';
+import DataTable from '../../components/DataTable';
 
-const StatCard = ({ title, amount, icon: Icon, colorClass }) => (
-    <div className="bg-white dark:bg-slate-900 p-6 rounded-sm border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
-        <div className={`p-4 rounded-xl ${colorClass} bg-opacity-10 text-opacity-100`}>
-            <Icon className="w-6 h-6" />
-        </div>
-        <div>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{title}</p>
-            <p className="text-2xl font-black text-slate-800 dark:text-white mt-1">Rp {Number(amount).toLocaleString()}</p>
+const StatCard = ({ title, amount, icon: Icon, colorClass, subtext }) => (
+    <div className="bg-white dark:bg-slate-900 p-6 rounded-sm border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+            <div className={`p-4 rounded-xl ${colorClass} bg-opacity-10 text-opacity-100`}>
+                <Icon className="w-6 h-6" />
+            </div>
+            <div>
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{title}</p>
+                <p className="text-2xl font-black text-slate-800 dark:text-white mt-1">Rp {Number(amount).toLocaleString('id-ID')}</p>
+                {subtext && (
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5 font-medium">{subtext}</p>
+                )}
+            </div>
         </div>
     </div>
 );
-
-import DataTable from '../../components/DataTable';
 
 const CashFlowList = () => {
     const dispatch = useDispatch();
@@ -31,6 +35,12 @@ const CashFlowList = () => {
     const { items: categories } = useSelector(state => state.transactionCategories);
     const [showModal, setShowModal] = useState(false);
     const [search, setSearch] = useState('');
+    
+    // Period Filters State
+    const [filterType, setFilterType] = useState('this_month'); // Default is 'this_month' (Bulan Ini)
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+
     const [formData, setFormData] = useState({
         transaction_date: new Date().toISOString().split('T')[0],
         type: 'expense',
@@ -39,15 +49,66 @@ const CashFlowList = () => {
         description: ''
     });
 
+    // Helper to calculate local ISO-formatted date range
+    const getDateRangeForFilter = (type, customStart, customEnd) => {
+        const now = new Date();
+        let start = '';
+        let end = '';
+
+        const formatDateLocal = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        if (type === 'this_month') {
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            start = formatDateLocal(firstDay);
+            end = formatDateLocal(lastDay);
+        } else if (type === 'last_month') {
+            const firstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
+            start = formatDateLocal(firstDay);
+            end = formatDateLocal(lastDay);
+        } else if (type === 'custom') {
+            start = customStart;
+            end = customEnd;
+        }
+
+        return { start, end };
+    };
+
+    const activeRange = useMemo(() => {
+        return getDateRangeForFilter(filterType, startDate, endDate);
+    }, [filterType, startDate, endDate]);
+
     useEffect(() => {
-        dispatch(fetchCashFlows({ page: 1 }));
-        dispatch(fetchFinanceStats());
+        // Fetch categories once on mount
         dispatch(fetchTransactionCategories());
     }, [dispatch]);
 
+    useEffect(() => {
+        // If Custom filter selected, wait until both start and end date are input
+        if (filterType === 'custom' && (!startDate || !endDate)) {
+            return;
+        }
+
+        dispatch(fetchCashFlows({ 
+            page: 1, 
+            search, 
+            start_date: activeRange.start, 
+            end_date: activeRange.end 
+        }));
+        dispatch(fetchFinanceStats({ 
+            start_date: activeRange.start, 
+            end_date: activeRange.end 
+        }));
+    }, [dispatch, filterType, startDate, endDate, activeRange, search]);
+
     const handleSearch = (val) => {
         setSearch(val);
-        dispatch(fetchCashFlows({ page: 1, search: val }));
     };
 
     const filteredCategories = useMemo(() => {
@@ -67,7 +128,9 @@ const CashFlowList = () => {
                 amount: '',
                 description: ''
             });
-            dispatch(fetchFinanceStats());
+            // Re-fetch using active filters
+            dispatch(fetchFinanceStats({ start_date: activeRange.start, end_date: activeRange.end }));
+            dispatch(fetchCashFlows({ page: 1, search, start_date: activeRange.start, end_date: activeRange.end }));
         } catch (error) {
             toast.error(error.message || 'Failed to record transaction');
         }
@@ -110,7 +173,7 @@ const CashFlowList = () => {
             accessorKey: 'amount',
             cell: info => (
                 <span className={`font-black tracking-tight ${info.row.original.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                    {info.row.original.type === 'income' ? '+' : '-'} Rp {Number(info.getValue()).toLocaleString()}
+                    {info.row.original.type === 'income' ? '+' : '-'} Rp {Number(info.getValue()).toLocaleString('id-ID')}
                 </span>
             )
         }
@@ -125,10 +188,79 @@ const CashFlowList = () => {
                 </div>
             </div>
 
+            {/* Filter Bar */}
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-sm border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all">
+                <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-indigo-500" />
+                    <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Filter Periode:</span>
+                </div>
+                
+                <div className="flex flex-wrap items-center gap-2">
+                    {[
+                        { value: 'this_month', label: 'Bulan Ini' },
+                        { value: 'last_month', label: 'Bulan Lalu' },
+                        { value: 'all_time', label: 'Semua Waktu' },
+                        { value: 'custom', label: 'Kustom Tanggal' }
+                    ].map((opt) => (
+                        <button
+                            key={opt.value}
+                            onClick={() => setFilterType(opt.value)}
+                            className={`px-4 py-2 rounded-sm text-xs font-bold transition-all border ${
+                                filterType === opt.value
+                                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-500/20'
+                                    : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900'
+                            }`}
+                        >
+                            {opt.label}
+                        </button>
+                    ))}
+                </div>
+
+                {filterType === 'custom' && (
+                    <div className="flex items-center gap-2 animate-in slide-in-from-right duration-300">
+                        <div className="relative">
+                            <span className="absolute left-3 top-2 text-[10px] text-slate-400 font-bold uppercase">Dari</span>
+                            <input
+                                type="date"
+                                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-12 pr-3 py-1.5 text-xs text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                            />
+                        </div>
+                        <div className="relative">
+                            <span className="absolute left-3 top-2 text-[10px] text-slate-400 font-bold uppercase">Sampai</span>
+                            <input
+                                type="date"
+                                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-16 pr-3 py-1.5 text-xs text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Financial Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <StatCard title="Total Pemasukan" amount={stats.total_income} icon={TrendingUp} colorClass="text-emerald-600 bg-emerald-600" />
-                <StatCard title="Total Pengeluaran" amount={stats.total_expense} icon={TrendingDown} colorClass="text-rose-600 bg-rose-600" />
-                <StatCard title="Saldo Saat Ini" amount={stats.balance} icon={Wallet} colorClass="text-indigo-600 bg-indigo-600" />
+                <StatCard 
+                    title={`Total Pemasukan ${filterType === 'this_month' ? '(Bulan Ini)' : filterType === 'last_month' ? '(Bulan Lalu)' : filterType === 'custom' ? '(Filter)' : ''}`} 
+                    amount={stats.total_income} 
+                    icon={TrendingUp} 
+                    colorClass="text-emerald-600 bg-emerald-600" 
+                />
+                <StatCard 
+                    title={`Total Pengeluaran ${filterType === 'this_month' ? '(Bulan Ini)' : filterType === 'last_month' ? '(Bulan Lalu)' : filterType === 'custom' ? '(Filter)' : ''}`} 
+                    amount={stats.total_expense} 
+                    icon={TrendingDown} 
+                    colorClass="text-rose-600 bg-rose-600" 
+                />
+                <StatCard 
+                    title={filterType === 'all_time' ? "Saldo Saat Ini" : "Saldo Periode Ini"} 
+                    amount={stats.balance} 
+                    icon={Wallet} 
+                    colorClass="text-indigo-600 bg-indigo-600"
+                    subtext={filterType !== 'all_time' ? `Total Keseluruhan: Rp ${Number(stats.lifetime_balance || 0).toLocaleString('id-ID')}` : null}
+                />
             </div>
 
             <DataTable 
@@ -143,10 +275,16 @@ const CashFlowList = () => {
                 }}
                 onPaginationChange={(updater) => {
                     const next = typeof updater === 'function' ? updater({ pageIndex: pagination.currentPage - 1, pageSize: 10 }) : updater;
-                    dispatch(fetchCashFlows({ page: next.pageIndex + 1, per_page: next.pageSize, search }));
+                    dispatch(fetchCashFlows({ 
+                        page: next.pageIndex + 1, 
+                        per_page: next.pageSize, 
+                        search,
+                        start_date: activeRange.start,
+                        end_date: activeRange.end
+                    }));
                 }}
                 onSearchChange={handleSearch}
-                exportFileName="laporan-arus-kas"
+                exportFileName={`laporan-arus-kas-${filterType}`}
                 actions={
                     <button 
                         onClick={() => setShowModal(true)}

@@ -62,19 +62,29 @@ class CashFlowController extends Controller
         });
     }
 
-    public function stats()
+    public function stats(Request $request)
     {
-        $stats = CashFlow::select('type', DB::raw('SUM(amount) as total'))
+        $query = CashFlow::query();
+
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereBetween('transaction_date', [$request->start_date, $request->end_date]);
+        }
+
+        $stats = $query->select('type', DB::raw('SUM(amount) as total'))
             ->groupBy('type')
             ->get();
 
         $income = $stats->where('type', 'income')->first()->total ?? 0;
         $expense = $stats->where('type', 'expense')->first()->total ?? 0;
 
+        $lifetimeIncome = CashFlow::where('type', 'income')->sum('amount');
+        $lifetimeExpense = CashFlow::where('type', 'expense')->sum('amount');
+
         return response()->json([
             'total_income' => (float)$income,
             'total_expense' => (float)$expense,
-            'balance' => (float)($income - $expense)
+            'balance' => (float)($income - $expense),
+            'lifetime_balance' => (float)($lifetimeIncome - $lifetimeExpense)
         ]);
     }
 

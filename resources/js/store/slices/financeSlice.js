@@ -4,9 +4,9 @@ import { toast } from 'react-toastify';
 
 export const fetchCashFlows = createAsyncThunk(
     'finance/fetchCashFlows',
-    async ({ page = 1, per_page = 10, type = '', search = '' }, { rejectWithValue }) => {
+    async ({ page = 1, per_page = 10, type = '', search = '', start_date = '', end_date = '' }, { rejectWithValue }) => {
         try {
-            return await apiFetch(`/api/cash-flow?page=${page}&per_page=${per_page}&type=${type}&search=${search}`);
+            return await apiFetch(`/api/cash-flow?page=${page}&per_page=${per_page}&type=${type}&search=${search}&start_date=${start_date}&end_date=${end_date}`);
         } catch (error) {
             return rejectWithValue(error.message);
         }
@@ -15,9 +15,9 @@ export const fetchCashFlows = createAsyncThunk(
 
 export const fetchFinanceStats = createAsyncThunk(
     'finance/fetchStats',
-    async (_, { rejectWithValue }) => {
+    async ({ start_date = '', end_date = '' } = {}, { rejectWithValue }) => {
         try {
-            return await apiFetch('/api/cash-flow/stats');
+            return await apiFetch(`/api/cash-flow/stats?start_date=${start_date}&end_date=${end_date}`);
         } catch (error) {
             return rejectWithValue(error.message);
         }
