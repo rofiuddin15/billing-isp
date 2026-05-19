@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
 import { Save, Settings as SettingsIcon, Calendar, Bell, ShieldCheck } from 'lucide-react';
 import apiFetch from '../utils/api';
 import { toast } from 'react-toastify';
 
 const Settings = () => {
+    const { permissions = [] } = useSelector(state => state.auth);
     const [settings, setSettings] = useState({
         due_date_day: 10,
     });
@@ -140,7 +142,7 @@ const Settings = () => {
                 <div className="flex justify-end">
                     <button 
                         type="submit"
-                        disabled={saving}
+                        disabled={saving || !permissions.includes('edit.settings')}
                         className="flex items-center gap-2 px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-xs font-black uppercase tracking-[0.2em] transition-all shadow-xl shadow-indigo-600/20 active:scale-95 disabled:opacity-50"
                     >
                         {saving ? 'Menyimpan...' : (

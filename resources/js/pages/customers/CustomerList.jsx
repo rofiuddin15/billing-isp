@@ -34,6 +34,7 @@ const CustomerList = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const { items: customers, loading, pagination } = useSelector(state => state.customers);
+    const { permissions = [] } = useSelector(state => state.auth);
     const [search, setSearch] = useState('');
     const [importLoading, setImportLoading] = useState(false);
     
@@ -305,41 +306,49 @@ const CustomerList = () => {
             id: 'actions',
             cell: info => (
                 <div className="flex items-center justify-end gap-1.5">
-                    <button 
-                        onClick={(e) => openActionModal(e, info.row.original)}
-                        className="flex items-center gap-1 px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-sm text-[9px] font-black uppercase tracking-wider transition-all active:scale-95 border border-slate-200"
-                    >
-                        <AlertCircle className="w-3.5 h-3.5" /> Tindakan
-                    </button>
-                    <button 
-                        onClick={(e) => openPayModal(e, info.row.original)}
-                        className="p-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-sm transition-all shadow-md shadow-emerald-500/10 active:scale-95"
-                        title="Bayar Cepat"
-                    >
-                        <CreditCard className="w-3.5 h-3.5" />
-                    </button>
-                    <button 
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/customers/${info.row.original.id}/edit`);
-                        }}
-                        className="p-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-sm transition-all shadow-md shadow-indigo-500/10 active:scale-95"
-                    >
-                        <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button 
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (confirm('Hapus pelanggan ini?')) dispatch(deleteCustomer(info.row.original.id));
-                        }}
-                        className="p-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-sm transition-all shadow-md shadow-rose-500/10 active:scale-95"
-                    >
-                        <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {permissions.includes('edit.customers') && (
+                        <button 
+                            onClick={(e) => openActionModal(e, info.row.original)}
+                            className="flex items-center gap-1 px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-sm text-[9px] font-black uppercase tracking-wider transition-all active:scale-95 border border-slate-200"
+                        >
+                            <AlertCircle className="w-3.5 h-3.5" /> Tindakan
+                        </button>
+                    )}
+                    {permissions.includes('edit.customers') && (
+                        <button 
+                            onClick={(e) => openPayModal(e, info.row.original)}
+                            className="p-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-sm transition-all shadow-md shadow-emerald-500/10 active:scale-95"
+                            title="Bayar Cepat"
+                        >
+                            <CreditCard className="w-3.5 h-3.5" />
+                        </button>
+                    )}
+                    {permissions.includes('edit.customers') && (
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/customers/${info.row.original.id}/edit`);
+                            }}
+                            className="p-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-sm transition-all shadow-md shadow-indigo-500/10 active:scale-95"
+                        >
+                            <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                    )}
+                    {permissions.includes('delete.customers') && (
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm('Hapus pelanggan ini?')) dispatch(deleteCustomer(info.row.original.id));
+                            }}
+                            className="p-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-sm transition-all shadow-md shadow-rose-500/10 active:scale-95"
+                        >
+                            <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                    )}
                 </div>
             )
         }
-    ], [pagination.currentPage, search, dispatch, navigate]);
+    ], [pagination.currentPage, search, dispatch, navigate, permissions]);
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -369,42 +378,50 @@ const CustomerList = () => {
                 exportFileName="daftar-pelanggan"
                 actions={
                     <div className="flex gap-2">
-                        <button 
-                            onClick={handleDownloadTemplate}
-                            className="flex items-center px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-sm text-sm font-bold hover:bg-slate-50 transition-all shadow-sm active:scale-95"
-                        >
-                            <Download className="w-4 h-4 sm:mr-2 text-emerald-600" />
-                            <span className="hidden sm:inline">Template</span>
-                        </button>
-                        <label className="flex items-center px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-sm text-sm font-bold hover:bg-slate-50 transition-all shadow-sm active:scale-95 cursor-pointer">
-                            <Upload className={`w-4 h-4 sm:mr-2 text-indigo-600 ${importLoading ? 'animate-bounce' : ''}`} />
-                            <span className="hidden sm:inline">{importLoading ? 'Importing...' : 'Import'}</span>
-                            <input type="file" accept=".xlsx,.csv" className="hidden" onChange={handleImportFile} disabled={importLoading} />
-                        </label>
-                        <button 
-                            onClick={async () => {
-                                if (confirm('Hasilkan tagihan untuk semua pelanggan aktif bulan ini?')) {
-                                    try {
-                                        const res = await apiFetch('/api/payments/generate', { method: 'POST' });
-                                        toast.success(res.message);
-                                        dispatch(fetchCustomers({ page: 1 }));
-                                    } catch (error) {
-                                        toast.error(error.message);
+                        {permissions.includes('create.customers') && (
+                            <button 
+                                onClick={handleDownloadTemplate}
+                                className="flex items-center px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-sm text-sm font-bold hover:bg-slate-50 transition-all shadow-sm active:scale-95"
+                            >
+                                <Download className="w-4 h-4 sm:mr-2 text-emerald-600" />
+                                <span className="hidden sm:inline">Template</span>
+                            </button>
+                        )}
+                        {permissions.includes('create.customers') && (
+                            <label className="flex items-center px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-sm text-sm font-bold hover:bg-slate-50 transition-all shadow-sm active:scale-95 cursor-pointer">
+                                <Upload className={`w-4 h-4 sm:mr-2 text-indigo-600 ${importLoading ? 'animate-bounce' : ''}`} />
+                                <span className="hidden sm:inline">{importLoading ? 'Importing...' : 'Import'}</span>
+                                <input type="file" accept=".xlsx,.csv" className="hidden" onChange={handleImportFile} disabled={importLoading} />
+                            </label>
+                        )}
+                        {permissions.includes('create.customers') && (
+                            <button 
+                                onClick={async () => {
+                                    if (confirm('Hasilkan tagihan untuk semua pelanggan aktif bulan ini?')) {
+                                        try {
+                                            const res = await apiFetch('/api/payments/generate', { method: 'POST' });
+                                            toast.success(res.message);
+                                            dispatch(fetchCustomers({ page: 1 }));
+                                        } catch (error) {
+                                            toast.error(error.message);
+                                        }
                                     }
-                                }
-                            }}
-                            className="flex items-center px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-sm text-sm font-bold hover:bg-slate-50 transition-all shadow-sm active:scale-95"
-                        >
-                            <CreditCard className="w-4 h-4 sm:mr-2 text-indigo-600" />
-                            <span className="hidden sm:inline">Tagihan</span>
-                        </button>
-                        <button 
-                            onClick={() => navigate('/customers/create')}
-                            className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-bold transition-all shadow-lg shadow-indigo-500/20 active:scale-95"
-                        >
-                            <Plus className="w-4 h-4 sm:mr-2" />
-                            <span className="hidden sm:inline">Tambah</span>
-                        </button>
+                                }}
+                                className="flex items-center px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-sm text-sm font-bold hover:bg-slate-50 transition-all shadow-sm active:scale-95"
+                            >
+                                <CreditCard className="w-4 h-4 sm:mr-2 text-indigo-600" />
+                                <span className="hidden sm:inline">Tagihan</span>
+                            </button>
+                        )}
+                        {permissions.includes('create.customers') && (
+                            <button 
+                                onClick={() => navigate('/customers/create')}
+                                className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-bold transition-all shadow-lg shadow-indigo-500/20 active:scale-95"
+                            >
+                                <Plus className="w-4 h-4 sm:mr-2" />
+                                <span className="hidden sm:inline">Tambah</span>
+                            </button>
+                        )}
                     </div>
                 }
             />

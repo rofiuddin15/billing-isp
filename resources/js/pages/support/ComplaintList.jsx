@@ -5,7 +5,7 @@ import { Megaphone, Plus, Clock, CheckCircle2, AlertCircle, MessageSquare, User,
 import { toast } from 'react-toastify';
 
 const ComplaintList = () => {
-    const { user } = useSelector(state => state.auth);
+    const { user, permissions = [] } = useSelector(state => state.auth);
     const [complaints, setComplaints] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isStaff, setIsStaff] = useState(false);
@@ -112,7 +112,7 @@ const ComplaintList = () => {
                     </p>
                 </div>
 
-                {!isStaff && (
+                {(!isStaff || permissions.includes('create.complaints')) && (
                     <button
                         onClick={() => setShowModal(true)}
                         className="bg-indigo-600 text-white px-6 py-3 rounded font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20 active:scale-95 flex items-center justify-center gap-2"
@@ -252,7 +252,7 @@ const ComplaintList = () => {
                                 </div>
                             </div>
 
-                            {isStaff ? (
+                            {isStaff && permissions.includes('edit.complaints') ? (
                                 <form onSubmit={handleUpdateStatus} className="space-y-6 pt-6 border-t border-slate-100 dark:border-slate-800">
                                     <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Tanggapan Staff</h4>
                                     <div>

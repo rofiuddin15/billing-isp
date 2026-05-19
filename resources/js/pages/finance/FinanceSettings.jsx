@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import { Save, Wallet, Percent, HardDrive, Tag } from 'lucide-react';
 import apiFetch from '../../utils/api';
 import { toast } from 'react-toastify';
 
 const FinanceSettings = () => {
+    const { permissions = [] } = useSelector(state => state.auth);
     const [settings, setSettings] = useState({
         installation_fee: 0,
         tax_rate: 0,
@@ -174,7 +176,7 @@ const FinanceSettings = () => {
                 <div className="flex justify-end pt-4">
                     <button
                         type="submit"
-                        disabled={isSaving}
+                        disabled={isSaving || !permissions.includes('edit.finance_settings')}
                         className="bg-indigo-600 text-white px-8 py-4 rounded font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-600/20 active:scale-95 disabled:opacity-50 flex items-center gap-2"
                     >
                         {isSaving ? 'Menyimpan...' : (

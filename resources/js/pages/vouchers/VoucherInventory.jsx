@@ -8,6 +8,7 @@ import { Ticket, Plus, Search, Filter, ShoppingCart, Trash2 } from 'lucide-react
 const VoucherInventory = () => {
     const dispatch = useDispatch();
     const { vouchers, packages, loading, pagination } = useSelector(state => state.vouchers);
+    const { permissions = [] } = useSelector(state => state.auth);
     const [showGenerateModal, setShowGenerateModal] = useState(false);
     const [generateData, setGenerateData] = useState({ package_id: '', count: 10 });
     const [search, setSearch] = useState('');
@@ -84,7 +85,7 @@ const VoucherInventory = () => {
             id: 'actions',
             cell: info => (
                 <div className="flex items-center gap-2">
-                    {info.row.original.status === 'ready' && (
+                    {info.row.original.status === 'ready' && permissions.includes('edit.vouchers') && (
                         <button 
                             onClick={() => handleSell(info.row.original.id)}
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-sm text-xs font-bold transition-all"
@@ -96,7 +97,7 @@ const VoucherInventory = () => {
                 </div>
             )
         }
-    ], []);
+    ], [permissions]);
 
     const filteredCategories = React.useMemo(() => {
         return packages; // Placeholder if needed, but DataTable handles search
@@ -129,13 +130,15 @@ const VoucherInventory = () => {
                 searchPlaceholder="Cari kode voucher..."
                 exportFileName="inventori-voucher"
                 actions={
-                    <button 
-                        onClick={() => setShowGenerateModal(true)}
-                        className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-semibold transition-all shadow-sm active:scale-95"
-                    >
-                        <Plus className="w-4 h-4 sm:mr-2" />
-                        <span className="hidden sm:inline">Buat Batch</span>
-                    </button>
+                    permissions.includes('create.vouchers') && (
+                        <button 
+                            onClick={() => setShowGenerateModal(true)}
+                            className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-semibold transition-all shadow-sm active:scale-95"
+                        >
+                            <Plus className="w-4 h-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Buat Batch</span>
+                        </button>
+                    )
                 }
             />
 

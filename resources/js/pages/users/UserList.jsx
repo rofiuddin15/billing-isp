@@ -10,6 +10,7 @@ import DataTable from '../../components/DataTable';
 const UserList = () => {
     const dispatch = useDispatch();
     const { items: users, roles, loading } = useSelector(state => state.users);
+    const { permissions = [] } = useSelector(state => state.auth);
     const [showModal, setShowModal] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
     const [formData, setFormData] = useState({
@@ -123,24 +124,28 @@ const UserList = () => {
             header: 'Aksi',
             cell: ({ row }) => (
                 <div className="flex items-center justify-end gap-2">
-                    <button 
-                        onClick={() => handleOpenModal(row.original)}
-                        className="p-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-sm transition-all shadow-md shadow-indigo-500/10 active:scale-95"
-                        title="Edit Staff"
-                    >
-                        <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button 
-                        onClick={() => handleDelete(row.original.id)}
-                        className="p-2 bg-rose-500 hover:bg-rose-600 text-white rounded-sm transition-all shadow-md shadow-rose-500/10 active:scale-95"
-                        title="Hapus Staff"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </button>
+                    {permissions.includes('edit.users') && (
+                        <button 
+                            onClick={() => handleOpenModal(row.original)}
+                            className="p-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-sm transition-all shadow-md shadow-indigo-500/10 active:scale-95"
+                            title="Edit Staff"
+                        >
+                            <Edit2 className="w-4 h-4" />
+                        </button>
+                    )}
+                    {permissions.includes('delete.users') && (
+                        <button 
+                            onClick={() => handleDelete(row.original.id)}
+                            className="p-2 bg-rose-500 hover:bg-rose-600 text-white rounded-sm transition-all shadow-md shadow-rose-500/10 active:scale-95"
+                            title="Hapus Staff"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    )}
                 </div>
             )
         }
-    ], [roles]);
+    ], [roles, permissions]);
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -158,15 +163,17 @@ const UserList = () => {
                 searchPlaceholder="Cari staff..."
                 exportFileName="daftar-staff"
                 actions={
-                    <div className="flex gap-2">
-                        <button 
-                            onClick={() => handleOpenModal()}
-                            className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-bold transition-all shadow-lg shadow-indigo-500/20 active:scale-95"
-                        >
-                            <Plus className="w-4 h-4 sm:mr-2" />
-                            <span className="hidden sm:inline">Tambah Staff</span>
-                        </button>
-                    </div>
+                    permissions.includes('create.users') && (
+                        <div className="flex gap-2">
+                            <button 
+                                onClick={() => handleOpenModal()}
+                                className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-bold transition-all shadow-lg shadow-indigo-500/20 active:scale-95"
+                            >
+                                <Plus className="w-4 h-4 sm:mr-2" />
+                                <span className="hidden sm:inline">Tambah Staff</span>
+                            </button>
+                        </div>
+                    )
                 }
             />
 

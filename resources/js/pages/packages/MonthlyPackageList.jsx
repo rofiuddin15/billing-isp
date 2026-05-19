@@ -10,6 +10,7 @@ import DataTable from '../../components/DataTable';
 const MonthlyPackageList = () => {
     const dispatch = useDispatch();
     const { items: packages, loading } = useSelector(state => state.packages);
+    const { permissions = [] } = useSelector(state => state.auth);
     const [showModal, setShowModal] = useState(false);
     const [editingPkg, setEditingPkg] = useState(null);
     const [formData, setFormData] = useState({ name: '', price: '', description: '' });
@@ -99,22 +100,26 @@ const MonthlyPackageList = () => {
             id: 'actions',
             cell: info => (
                 <div className="flex justify-end gap-2">
-                    <button 
-                        onClick={() => handleOpenModal(info.row.original)}
-                        className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 hover:text-indigo-600 transition-colors"
-                    >
-                        <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button 
-                        onClick={() => handleDelete(info.row.original.id)}
-                        className="p-2 hover:bg-red-500/10 rounded-lg text-slate-400 hover:text-red-600 transition-colors"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </button>
+                    {permissions.includes('edit.packages') && (
+                        <button 
+                            onClick={() => handleOpenModal(info.row.original)}
+                            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 hover:text-indigo-600 transition-colors"
+                        >
+                            <Edit2 className="w-4 h-4" />
+                        </button>
+                    )}
+                    {permissions.includes('delete.packages') && (
+                        <button 
+                            onClick={() => handleDelete(info.row.original.id)}
+                            className="p-2 hover:bg-red-500/10 rounded-lg text-slate-400 hover:text-red-600 transition-colors"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    )}
                 </div>
             )
         }
-    ], []);
+    ], [permissions]);
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -132,13 +137,15 @@ const MonthlyPackageList = () => {
                 onImport={handleImport}
                 exportFileName="paket-bulanan"
                 actions={
-                    <button 
-                        onClick={() => handleOpenModal()}
-                        className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-semibold transition-all shadow-sm"
-                    >
-                        <Plus className="w-4 h-4 sm:mr-2" />
-                        <span className="hidden sm:inline">Tambah Paket</span>
-                    </button>
+                    permissions.includes('create.packages') && (
+                        <button 
+                            onClick={() => handleOpenModal()}
+                            className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-semibold transition-all shadow-sm"
+                        >
+                            <Plus className="w-4 h-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Tambah Paket</span>
+                        </button>
+                    )
                 }
             />
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { useSelector } from 'react-redux';
 import apiFetch from '../../utils/api';
 import { 
     Shield, 
@@ -41,6 +42,7 @@ const ACTIONS = [
 ];
 
 const RoleManagement = () => {
+    const { permissions: userPermissions = [] } = useSelector(state => state.auth);
     const [roles, setRoles] = useState([]);
     const [permissions, setPermissions] = useState([]);
     const [selectedRole, setSelectedRole] = useState(null);
@@ -222,12 +224,14 @@ const RoleManagement = () => {
                         Kelola hak akses pengguna pada tingkat fitur operasional CRUD (Lihat, Tambah, Ubah, Hapus) per menu.
                     </p>
                 </div>
-                <button 
-                    onClick={() => setShowNewRoleModal(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black uppercase tracking-wider rounded-sm shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
-                >
-                    <Plus className="w-4 h-4" /> Tambah Role Baru
-                </button>
+                {userPermissions.includes('create.roles') && (
+                    <button 
+                        onClick={() => setShowNewRoleModal(true)}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black uppercase tracking-wider rounded-sm shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
+                    >
+                        <Plus className="w-4 h-4" /> Tambah Role Baru
+                    </button>
+                )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -251,19 +255,21 @@ const RoleManagement = () => {
                                     <span className="text-sm capitalize">{role.name}</span>
                                 </div>
                                 {role.name !== 'admin' ? (
-                                    <button 
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDeleteRole(role.id);
-                                        }}
-                                        className={`p-1.5 rounded transition-all opacity-0 group-hover:opacity-100 ${
-                                            selectedRole?.id === role.id 
-                                                ? 'hover:bg-indigo-700 text-white' 
-                                                : 'hover:bg-rose-50 dark:hover:bg-rose-500/10 text-rose-500'
-                                        }`}
-                                    >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
+                                    userPermissions.includes('delete.roles') ? (
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteRole(role.id);
+                                            }}
+                                            className={`p-1.5 rounded transition-all opacity-0 group-hover:opacity-100 ${
+                                                selectedRole?.id === role.id 
+                                                    ? 'hover:bg-indigo-700 text-white' 
+                                                    : 'hover:bg-rose-50 dark:hover:bg-rose-500/10 text-rose-500'
+                                            }`}
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                    ) : null
                                 ) : (
                                     <Lock className="w-3.5 h-3.5 opacity-65" />
                                 )}
@@ -293,7 +299,7 @@ const RoleManagement = () => {
                                 
                                 <button 
                                     onClick={handleSavePermissions}
-                                    disabled={saving || selectedRole.name === 'admin'}
+                                    disabled={saving || selectedRole.name === 'admin' || !userPermissions.includes('edit.roles')}
                                     className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-wider rounded-sm shadow-lg shadow-emerald-600/20 transition-all active:scale-95"
                                 >
                                     <Save className="w-4 h-4" /> {saving ? 'Menyimpan...' : 'Simpan Matriks'}
@@ -320,7 +326,7 @@ const RoleManagement = () => {
                                                 <th key={action.key} className="py-3 px-4 text-center">
                                                     <button
                                                         type="button"
-                                                        disabled={selectedRole.name === 'admin'}
+                                                        disabled={selectedRole.name === 'admin' || !userPermissions.includes('edit.roles')}
                                                         onClick={() => handleToggleColumn(action.key, matrixStats.cols[action.key])}
                                                         className={`px-2.5 py-1 rounded-sm border hover:border-slate-300 dark:hover:border-slate-700 text-[9px] font-black transition-all ${
                                                             matrixStats.cols[action.key]
@@ -356,14 +362,14 @@ const RoleManagement = () => {
                                                             <td key={action.key} className="py-3 px-4 text-center">
                                                                 <button
                                                                     type="button"
-                                                                    disabled={selectedRole.name === 'admin'}
+                                                                    disabled={selectedRole.name === 'admin' || !userPermissions.includes('edit.roles')}
                                                                     onClick={() => handleTogglePermission(menuName, action.key)}
                                                                     className={`
                                                                         inline-flex items-center justify-center p-1.5 rounded transition-all border
                                                                         ${isChecked 
                                                                             ? `${action.color} border-slate-200 dark:border-slate-800` 
                                                                             : 'bg-transparent border-slate-200 dark:border-slate-800 text-slate-200 dark:text-slate-800 hover:border-slate-300 dark:hover:border-slate-700'}
-                                                                        ${selectedRole.name === 'admin' ? 'cursor-default opacity-85' : 'cursor-pointer'}
+                                                                        ${(selectedRole.name === 'admin' || !userPermissions.includes('edit.roles')) ? 'cursor-default opacity-85' : 'cursor-pointer'}
                                                                     `}
                                                                 >
                                                                     {isChecked ? (
@@ -379,7 +385,7 @@ const RoleManagement = () => {
                                                     <td className="py-3 px-4 text-right">
                                                         <button
                                                             type="button"
-                                                            disabled={selectedRole.name === 'admin'}
+                                                            disabled={selectedRole.name === 'admin' || !userPermissions.includes('edit.roles')}
                                                             onClick={() => handleToggleRow(menuName, isRowAllSelected)}
                                                             className={`px-3 py-1 text-[9px] font-black uppercase tracking-wider rounded-sm transition-all border ${
                                                                 isRowAllSelected

@@ -32,6 +32,7 @@ const StatCard = ({ title, amount, icon: Icon, colorClass, subtext }) => (
 const CashFlowList = () => {
     const dispatch = useDispatch();
     const { entries, stats, loading, pagination } = useSelector(state => state.finance);
+    const { permissions = [] } = useSelector(state => state.auth);
     const { items: categories } = useSelector(state => state.transactionCategories);
     const [showModal, setShowModal] = useState(false);
     const [search, setSearch] = useState('');
@@ -297,13 +298,15 @@ const CashFlowList = () => {
                 onSearchChange={handleSearch}
                 exportFileName={`laporan-arus-kas-${filterType}`}
                 actions={
-                    <button 
-                        onClick={() => setShowModal(true)}
-                        className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-bold transition-all shadow-lg shadow-indigo-500/20 active:scale-95"
-                    >
-                        <Plus className="w-4 h-4 sm:mr-2" />
-                        <span className="hidden sm:inline">Tambah Transaksi</span>
-                    </button>
+                    permissions.includes('create.finance') && (
+                        <button 
+                            onClick={() => setShowModal(true)}
+                            className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-bold transition-all shadow-lg shadow-indigo-500/20 active:scale-95"
+                        >
+                            <Plus className="w-4 h-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Tambah Transaksi</span>
+                        </button>
+                    )
                 }
             />
 

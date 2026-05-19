@@ -7,6 +7,7 @@ import { ChevronRight, ChevronDown, Folder, FileText, Plus } from 'lucide-react'
 const COAList = () => {
     const dispatch = useDispatch();
     const { tree, loading } = useSelector(state => state.accounts);
+    const { permissions = [] } = useSelector(state => state.auth);
 
     useEffect(() => {
         dispatch(fetchAccounts());
@@ -62,7 +63,7 @@ const COAList = () => {
             accessorKey: 'name',
             cell: ({ row, getValue }) => (
                 <span className={`text-sm font-semibold ${row.getCanExpand() ? 'text-slate-800 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}>
-                    {getValue()}
+                     {getValue()}
                 </span>
             )
         },
@@ -95,10 +96,12 @@ const COAList = () => {
                 getSubRows={row => row.children}
                 searchPlaceholder="Search accounts..."
                 actions={
-                    <button className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-semibold transition-all shadow-sm active:scale-95">
-                        <Plus className="w-4 h-4 sm:mr-2" />
-                        <span className="hidden sm:inline">Add Account</span>
-                    </button>
+                    permissions.includes('create.coa') && (
+                        <button className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-semibold transition-all shadow-sm active:scale-95">
+                            <Plus className="w-4 h-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Add Account</span>
+                        </button>
+                    )
                 }
             />
         </div>
