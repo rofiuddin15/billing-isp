@@ -26,7 +26,8 @@ class RoleController extends Controller
             'complaints',
             'users',
             'roles',
-            'settings'
+            'settings',
+            'technician_performances'
         ];
 
         $actions = ['menu', 'create', 'edit', 'delete'];

@@ -31,6 +31,46 @@ class CustomerController extends Controller
             $query->where('status', $request->status);
         }
 
+        if ($request->filled('monthly_package_id')) {
+            $query->where('monthly_package_id', $request->monthly_package_id);
+        }
+
+        if ($request->filled('has_arrears')) {
+            if ($request->has_arrears === 'yes') {
+                $query->whereHas('payments', function($q) use ($dueDateDay, $todayDay, $currentPeriod) {
+                    $q->where('status', 'unpaid')
+                      ->where(function($sub) use ($dueDateDay, $todayDay, $currentPeriod) {
+                          $sub->where('period', '<', $currentPeriod);
+                          if ($todayDay > $dueDateDay) {
+                              $sub->orWhere('period', $currentPeriod);
+                          }
+                      });
+                });
+            } else {
+                $query->whereDoesntHave('payments', function($q) use ($dueDateDay, $todayDay, $currentPeriod) {
+                    $q->where('status', 'unpaid')
+                      ->where(function($sub) use ($dueDateDay, $todayDay, $currentPeriod) {
+                          $sub->where('period', '<', $currentPeriod);
+                          if ($todayDay > $dueDateDay) {
+                              $sub->orWhere('period', $currentPeriod);
+                          }
+                      });
+                });
+            }
+        }
+
+        if ($request->filled('billing_status')) {
+            if ($request->billing_status === 'paid') {
+                $query->whereHas('payments', function($q) use ($currentPeriod) {
+                    $q->where('period', $currentPeriod)->where('status', 'paid');
+                });
+            } elseif ($request->billing_status === 'unpaid') {
+                $query->whereHas('payments', function($q) use ($currentPeriod) {
+                    $q->where('period', $currentPeriod)->where('status', 'unpaid');
+                });
+            }
+        }
+
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {

@@ -20,7 +20,9 @@ import {
     User,
     Calendar,
     Upload,
-    Download
+    Download,
+    Filter,
+    ChevronDown
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Badge from '../../components/Badge';
@@ -37,6 +39,13 @@ const CustomerList = () => {
     const { permissions = [] } = useSelector(state => state.auth);
     const [search, setSearch] = useState('');
     const [importLoading, setImportLoading] = useState(false);
+    const [showDataDropdown, setShowDataDropdown] = useState(false);
+    const [showFilters, setShowFilters] = useState(false);
+    const [packages, setPackages] = useState([]);
+    const [filterStatus, setFilterStatus] = useState('');
+    const [filterArrears, setFilterArrears] = useState('');
+    const [filterBilling, setFilterBilling] = useState('');
+    const [filterPackage, setFilterPackage] = useState('');
     
     // Modal States
     const [showPayModal, setShowPayModal] = useState(false);
@@ -94,14 +103,29 @@ const CustomerList = () => {
         }
     }, [discount, useBalance, paymentType, installmentAmount, payingInvoice, selectedCustomer]);
 
+    const applyFilters = (page = 1, currentSearch = search) => {
+        dispatch(fetchCustomers({
+            page,
+            search: currentSearch,
+            status: filterStatus,
+            has_arrears: filterArrears,
+            billing_status: filterBilling,
+            monthly_package_id: filterPackage
+        }));
+    };
+
     useEffect(() => {
-        dispatch(fetchCustomers({ page: 1 }));
+        applyFilters(1);
+    }, [filterStatus, filterArrears, filterBilling, filterPackage]);
+
+    useEffect(() => {
+        apiFetch('/api/monthly-packages').then(res => setPackages(res.data || res || [])).catch(err => console.error(err));
         apiFetch('/api/settings').then(res => setAppSettings(res)).catch(err => console.error(err));
     }, [dispatch]);
 
     const handleSearch = (val) => {
         setSearch(val);
-        dispatch(fetchCustomers({ page: 1, search: val }));
+        applyFilters(1, val);
     };
 
     const handleDownloadTemplate = async () => {
@@ -140,6 +164,33 @@ const CustomerList = () => {
         } finally {
             setImportLoading(false);
             e.target.value = ''; // Reset input
+        }
+    };
+
+    const handleExportData = async () => {
+        try {
+            const res = await apiFetch('/api/customers?per_page=10000');
+            const dataToExport = (res.data || res || []).map(c => ({
+                'Nama Pelanggan': c.name,
+                'Kode Pelanggan': c.customer_code,
+                'Email': c.email || '-',
+                'Telepon': c.phone || '-',
+                'Alamat': c.address || '-',
+                'PPPoE User': c.pppoe_user || '-',
+                'Paket Bulanan': c.monthly_package?.name || 'Tanpa Paket',
+                'Saldo (Rp)': c.balance || 0,
+                'Status': c.status === 'active' ? 'Aktif' : c.status === 'isolir' ? 'Isolir' : 'Non-Aktif'
+            }));
+            const headers = Object.keys(dataToExport[0]).join(',');
+            const rows = dataToExport.map(row => 
+                Object.values(row).map(val => `"${String(val).replace(/"/g, '""')}"`).join(',')
+            );
+            const csvContent = "\uFEFF" + [headers, ...rows].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            saveAs(blob, `daftar_pelanggan_${new Date().toISOString().slice(0, 10)}.csv`);
+            toast.success('Data pelanggan berhasil diekspor');
+        } catch (error) {
+            toast.error('Gagal mengekspor data: ' + error.message);
         }
     };
 
@@ -355,9 +406,68 @@ const CustomerList = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Manajemen Pelanggan</h2>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm">Pantau status berlangganan dan penagihan pelanggan.</p>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">Pantau status berlangganan dan penagihan pelanggan secara realtime.</p>
                 </div>
             </div>
+
+            {/* Filter Panel */}
+            {showFilters && (
+                <div className="bg-white dark:bg-slate-900 p-4 border border-slate-200 dark:border-slate-800 rounded-sm shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-in slide-in-from-top-2 duration-205">
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Status Layanan</label>
+                        <select
+                            value={filterStatus}
+                            onChange={e => setFilterStatus(e.target.value)}
+                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-2 text-xs text-slate-850 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
+                        >
+                            <option value="">Semua Status</option>
+                            <option value="active">Aktif</option>
+                            <option value="isolir">Isolir</option>
+                            <option value="non-active">Non-Aktif</option>
+                        </select>
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-widest block">Tunggakan Tagihan</label>
+                        <select
+                            value={filterArrears}
+                            onChange={e => setFilterArrears(e.target.value)}
+                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-2 text-xs text-slate-850 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
+                        >
+                            <option value="">Semua Tunggakan</option>
+                            <option value="yes">Ada Tunggakan</option>
+                            <option value="no">Tidak Ada Tunggakan</option>
+                        </select>
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-widest block">Status Penagihan (Bulan Ini)</label>
+                        <select
+                            value={filterBilling}
+                            onChange={e => setFilterBilling(e.target.value)}
+                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-2 text-xs text-slate-850 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
+                        >
+                            <option value="">Semua Penagihan</option>
+                            <option value="paid">Lunas</option>
+                            <option value="unpaid">Belum Bayar</option>
+                        </select>
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-widest block">Paket Bulanan</label>
+                        <select
+                            value={filterPackage}
+                            onChange={e => setFilterPackage(e.target.value)}
+                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-2 text-xs text-slate-850 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
+                        >
+                            <option value="">Semua Paket</option>
+                            {packages.map(pkg => (
+                                <option key={pkg.id} value={pkg.id}>{pkg.name} - Rp {Number(pkg.price).toLocaleString()}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+            )}
 
             <DataTable 
                 columns={columns}
@@ -372,28 +482,85 @@ const CustomerList = () => {
                 }}
                 onPaginationChange={(updater) => {
                     const next = typeof updater === 'function' ? updater({ pageIndex: pagination.currentPage - 1, pageSize: 10 }) : updater;
-                    dispatch(fetchCustomers({ page: next.pageIndex + 1, per_page: next.pageSize, search }));
+                    dispatch(fetchCustomers({
+                        page: next.pageIndex + 1,
+                        per_page: next.pageSize,
+                        search,
+                        status: filterStatus,
+                        has_arrears: filterArrears,
+                        billing_status: filterBilling,
+                        monthly_package_id: filterPackage
+                    }));
                 }}
                 onSearchChange={handleSearch}
-                exportFileName="daftar-pelanggan"
+                hideExport={true}
                 actions={
-                    <div className="flex gap-2">
-                        {permissions.includes('create.customers') && (
+                    <div className="flex items-center gap-2">
+                        {/* Filter Toggle Button */}
+                        <button 
+                            onClick={() => setShowFilters(!showFilters)}
+                            className={`flex items-center px-4 py-2 border rounded-sm text-sm font-bold transition-all shadow-sm active:scale-95 ${
+                                showFilters 
+                                    ? 'bg-indigo-600 text-white border-indigo-600' 
+                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
+                            }`}
+                        >
+                            <Filter className="w-4 h-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Filter</span>
+                            {(filterStatus || filterArrears || filterBilling || filterPackage) && (
+                                <span className="ml-1.5 w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                            )}
+                        </button>
+
+                        {/* Kelola Data Dropdown Button */}
+                        <div className="relative">
                             <button 
-                                onClick={handleDownloadTemplate}
-                                className="flex items-center px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-sm text-sm font-bold hover:bg-slate-50 transition-all shadow-sm active:scale-95"
+                                onClick={() => setShowDataDropdown(!showDataDropdown)}
+                                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-sm text-sm font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm active:scale-95"
                             >
-                                <Download className="w-4 h-4 sm:mr-2 text-emerald-600" />
-                                <span className="hidden sm:inline">Template</span>
+                                <span>Aksi Data</span>
+                                <ChevronDown className="w-4 h-4 text-slate-500" />
                             </button>
-                        )}
-                        {permissions.includes('create.customers') && (
-                            <label className="flex items-center px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-sm text-sm font-bold hover:bg-slate-50 transition-all shadow-sm active:scale-95 cursor-pointer">
-                                <Upload className={`w-4 h-4 sm:mr-2 text-indigo-600 ${importLoading ? 'animate-bounce' : ''}`} />
-                                <span className="hidden sm:inline">{importLoading ? 'Importing...' : 'Import'}</span>
-                                <input type="file" accept=".xlsx,.csv" className="hidden" onChange={handleImportFile} disabled={importLoading} />
-                            </label>
-                        )}
+                            {showDataDropdown && (
+                                <>
+                                    <div className="fixed inset-0 z-10" onClick={() => setShowDataDropdown(false)} />
+                                    <div className="absolute right-0 mt-1.5 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm shadow-xl z-20 py-1 divide-y divide-slate-100 dark:divide-slate-800 animate-in fade-in slide-in-from-top-1 duration-150">
+                                        {permissions.includes('create.customers') && (
+                                            <button 
+                                                onClick={() => {
+                                                    setShowDataDropdown(false);
+                                                    handleDownloadTemplate();
+                                                }}
+                                                className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                            >
+                                                <Download className="w-4 h-4 text-emerald-600" /> Unduh Template
+                                            </button>
+                                        )}
+                                        {permissions.includes('create.customers') && (
+                                            <label className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer">
+                                                <Upload className="w-4 h-4 text-indigo-600" /> 
+                                                <span>{importLoading ? 'Mengimpor...' : 'Impor Pelanggan'}</span>
+                                                <input type="file" accept=".xlsx,.csv" className="hidden" onChange={(e) => {
+                                                    setShowDataDropdown(false);
+                                                    handleImportFile(e);
+                                                }} disabled={importLoading} />
+                                            </label>
+                                        )}
+                                        <button 
+                                            onClick={() => {
+                                                setShowDataDropdown(false);
+                                                handleExportData();
+                                            }}
+                                            className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                        >
+                                            <Download className="w-4 h-4 text-amber-500" /> Ekspor Excel/CSV
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Invoice Generation Button */}
                         {permissions.includes('create.customers') && (
                             <button 
                                 onClick={async () => {
@@ -401,18 +568,20 @@ const CustomerList = () => {
                                         try {
                                             const res = await apiFetch('/api/payments/generate', { method: 'POST' });
                                             toast.success(res.message);
-                                            dispatch(fetchCustomers({ page: 1 }));
+                                            applyFilters(1);
                                         } catch (error) {
                                             toast.error(error.message);
                                         }
                                     }
                                 }}
-                                className="flex items-center px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-sm text-sm font-bold hover:bg-slate-50 transition-all shadow-sm active:scale-95"
+                                className="flex items-center px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-sm text-sm font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm active:scale-95"
                             >
                                 <CreditCard className="w-4 h-4 sm:mr-2 text-indigo-600" />
                                 <span className="hidden sm:inline">Tagihan</span>
                             </button>
                         )}
+
+                        {/* Add Customer Button */}
                         {permissions.includes('create.customers') && (
                             <button 
                                 onClick={() => navigate('/customers/create')}

@@ -4,9 +4,14 @@ import { toast } from 'react-toastify';
 
 export const fetchCustomers = createAsyncThunk(
     'customers/fetchAll',
-    async ({ page = 1, per_page = 10, search = '' }, { rejectWithValue }) => {
+    async ({ page = 1, per_page = 10, search = '', status = '', monthly_package_id = '', has_arrears = '', billing_status = '' }, { rejectWithValue }) => {
         try {
-            return await apiFetch(`/api/customers?page=${page}&per_page=${per_page}&search=${search}`);
+            let url = `/api/customers?page=${page}&per_page=${per_page}&search=${search}`;
+            if (status) url += `&status=${status}`;
+            if (monthly_package_id) url += `&monthly_package_id=${monthly_package_id}`;
+            if (has_arrears) url += `&has_arrears=${has_arrears}`;
+            if (billing_status) url += `&billing_status=${billing_status}`;
+            return await apiFetch(url);
         } catch (error) {
             return rejectWithValue(error.message);
         }
