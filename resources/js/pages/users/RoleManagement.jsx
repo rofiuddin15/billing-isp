@@ -31,7 +31,8 @@ const MENU_LABELS = {
     complaints: 'Aduan Pelanggan',
     users: 'Manajemen Staff',
     roles: 'Manajemen Akses & Role',
-    settings: 'Pengaturan Sistem'
+    settings: 'Pengaturan Sistem',
+    technician_performances: 'Kinerja Teknisi'
 };
 
 const ACTIONS = [

@@ -143,6 +143,16 @@ Route::group(['middleware' => 'auth:api'], function() {
         Route::delete('complaints/{complaint}', [\App\Http\Controllers\Api\ComplaintController::class, 'destroy'])->middleware('permission:delete.complaints');
     });
 
+    // 12b. Kinerja Teknisi (Technician Performance)
+    Route::group(['middleware' => 'permission:menu.technician_performances'], function() {
+        Route::get('technician-performances', [\App\Http\Controllers\Api\TechnicianPerformanceController::class, 'index']);
+        Route::get('technician-performances/stats', [\App\Http\Controllers\Api\TechnicianPerformanceController::class, 'stats']);
+        Route::get('technician-performances/technicians', [\App\Http\Controllers\Api\TechnicianPerformanceController::class, 'getTechnicians']);
+        Route::post('technician-performances', [\App\Http\Controllers\Api\TechnicianPerformanceController::class, 'store'])->middleware('permission:create.technician_performances');
+        Route::post('technician-performances/{performance}', [\App\Http\Controllers\Api\TechnicianPerformanceController::class, 'update'])->middleware('permission:edit.technician_performances');
+        Route::delete('technician-performances/{performance}', [\App\Http\Controllers\Api\TechnicianPerformanceController::class, 'destroy'])->middleware('permission:delete.technician_performances');
+    });
+
     // 13. Pengaturan Sistem (Settings)
     Route::group(['middleware' => 'permission:menu.settings'], function() {
         Route::get('settings', [\App\Http\Controllers\Api\AppSettingController::class, 'index']);

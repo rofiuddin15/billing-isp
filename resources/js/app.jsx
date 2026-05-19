@@ -29,6 +29,7 @@ import CustomerDashboard from './pages/CustomerDashboard';
 import FinanceSettings from './pages/finance/FinanceSettings';
 import FinancialReports from './pages/finance/FinancialReports';
 import ComplaintList from './pages/support/ComplaintList';
+import TechnicianPerformanceReport from './pages/support/TechnicianPerformanceReport';
 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -62,6 +63,7 @@ root.render(
                     <Route path="master/voucher-packages" element={<VoucherPackageList />} />
                     <Route path="master/transaction-categories" element={<TransactionCategoryList />} />
                     <Route path="complaints" element={<ComplaintList />} />
+                    <Route path="support/technician-performance" element={<TechnicianPerformanceReport />} />
                     <Route path="settings" element={<Settings />} />
                     <Route path="system/logs" element={<AuditTrail />} />
                 </Route>

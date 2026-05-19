@@ -13,7 +13,8 @@ import {
     FileText,
     ShieldCheck,
     ChevronDown,
-    UserCircle
+    UserCircle,
+    Wrench
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 
@@ -85,6 +86,7 @@ const Sidebar = () => {
             title: 'DUKUNGAN',
             items: [
                 { icon: Megaphone, label: 'Aduan', path: '/complaints', permission: 'menu.complaints' },
+                { icon: Wrench, label: 'Kinerja Teknisi', path: '/support/technician-performance', permission: 'menu.technician_performances' },
                 { icon: UserCircle, label: 'Manajemen Staff', path: '/master/users', permission: 'menu.users' },
                 { icon: ShieldCheck, label: 'Akses & Role', path: '/master/roles', permission: 'menu.roles' },
                 { icon: FileText, label: 'Log Aktivitas', path: '/system/logs', permission: 'menu.logs' },
