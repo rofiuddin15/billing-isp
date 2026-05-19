@@ -21,7 +21,9 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
-            'role' => 'required|exists:roles,name',
+            'roles' => 'required_without:role|array|min:1',
+            'roles.*' => 'exists:roles,name',
+            'role' => 'required_without:roles|string|exists:roles,name',
         ]);
 
         $user = User::create([
@@ -30,7 +32,12 @@ class UserController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
-        $user->assignRole($validated['role']);
+        $roles = $request->input('roles', []);
+        if (empty($roles) && $request->filled('role')) {
+            $roles = [$request->input('role')];
+        }
+
+        $user->syncRoles($roles);
 
         return response()->json($user->load('roles'), 201);
     }
@@ -41,7 +48,9 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
             'password' => 'nullable|string|min:8',
-            'role' => 'required|exists:roles,name',
+            'roles' => 'required_without:role|array|min:1',
+            'roles.*' => 'exists:roles,name',
+            'role' => 'required_without:roles|string|exists:roles,name',
         ]);
 
         $user->update([
@@ -53,7 +62,12 @@ class UserController extends Controller
             $user->update(['password' => Hash::make($validated['password'])]);
         }
 
-        $user->syncRoles([$validated['role']]);
+        $roles = $request->input('roles', []);
+        if (empty($roles) && $request->filled('role')) {
+            $roles = [$request->input('role')];
+        }
+
+        $user->syncRoles($roles);
 
         return response()->json($user->load('roles'));
     }

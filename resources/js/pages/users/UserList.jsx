@@ -17,7 +17,7 @@ const UserList = () => {
         name: '',
         email: '',
         password: '',
-        role: ''
+        roles: []
     });
 
     useEffect(() => {
@@ -32,7 +32,7 @@ const UserList = () => {
                 name: user.name,
                 email: user.email,
                 password: '',
-                role: user.roles[0]?.name || ''
+                roles: user.roles?.map(r => r.name) || []
             });
         } else {
             setEditingUser(null);
@@ -40,7 +40,7 @@ const UserList = () => {
                 name: '',
                 email: '',
                 password: '',
-                role: ''
+                roles: []
             });
         }
         setShowModal(true);
@@ -111,11 +111,21 @@ const UserList = () => {
             accessorKey: 'role',
             header: 'Role / Akses',
             cell: ({ row }) => {
-                const roleName = row.original.roles[0]?.name || 'Tanpa Role';
+                const userRoles = row.original.roles || [];
                 return (
-                    <Badge variant="indigo" className="text-[10px] uppercase font-black px-3 py-1">
-                        {roleName}
-                    </Badge>
+                    <div className="flex flex-wrap gap-1 max-w-[200px]">
+                        {userRoles.length === 0 ? (
+                            <Badge variant="slate" className="text-[10px] uppercase font-black px-3 py-1">
+                                Tanpa Role
+                            </Badge>
+                        ) : (
+                            userRoles.map(r => (
+                                <Badge key={r.id} variant="indigo" className="text-[10px] uppercase font-black px-2.5 py-0.5">
+                                    {r.name}
+                                </Badge>
+                            ))
+                        )}
+                    </div>
                 );
             }
         },
@@ -215,19 +225,41 @@ const UserList = () => {
                                     placeholder="staff@minisp.com"
                                 />
                             </div>
-                            <div className="space-y-1">
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Role / Hak Akses</label>
-                                <select 
-                                    required
-                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-4 py-2.5 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer"
-                                    value={formData.role}
-                                    onChange={e => setFormData({...formData, role: e.target.value})}
-                                >
-                                    <option value="">Pilih Role...</option>
-                                    {roles.map(role => (
-                                        <option key={role.id} value={role.name}>{role.name.toUpperCase()}</option>
-                                    ))}
-                                </select>
+                            <div className="space-y-1.5">
+                                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Role / Hak Akses (Multi-Role)</label>
+                                <div className="border border-slate-200 dark:border-slate-800 rounded-sm p-3 bg-slate-50/50 dark:bg-slate-950 max-h-36 overflow-y-auto space-y-2.5">
+                                    {roles.map(role => {
+                                        const isChecked = formData.roles.includes(role.name);
+                                        return (
+                                            <label key={role.id} className="flex items-center gap-2.5 cursor-pointer select-none">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isChecked}
+                                                    onChange={() => {
+                                                        if (isChecked) {
+                                                            setFormData({
+                                                                ...formData,
+                                                                roles: formData.roles.filter(r => r !== role.name)
+                                                            });
+                                                        } else {
+                                                            setFormData({
+                                                                ...formData,
+                                                                roles: [...formData.roles, role.name]
+                                                            });
+                                                        }
+                                                    }}
+                                                    className="rounded border-slate-300 text-indigo-650 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+                                                />
+                                                <span className="text-xs font-bold text-slate-700 dark:text-slate-350 uppercase tracking-tight">
+                                                    {role.name.replace(/_/g, ' ')}
+                                                </span>
+                                            </label>
+                                        );
+                                    })}
+                                    {roles.length === 0 && (
+                                        <div className="text-xs text-slate-400 dark:text-slate-500 text-center py-2">Tidak ada role tersedia.</div>
+                                    )}
+                                </div>
                             </div>
                             <div className="space-y-1">
                                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
