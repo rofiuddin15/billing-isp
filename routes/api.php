@@ -64,6 +64,7 @@ Route::group(['middleware' => 'auth:api'], function() {
         Route::get('payments/{payment}', [PaymentController::class, 'show']);
         Route::post('payments', [PaymentController::class, 'store'])->middleware('permission:create.customers');
         Route::post('payments/generate', [PaymentController::class, 'generateMonthlyBills'])->middleware('permission:create.customers');
+        Route::post('payments/batch-pay', [PaymentController::class, 'batchPay'])->middleware('permission:edit.customers');
         Route::post('payments/{payment}/pay', [PaymentController::class, 'pay'])->middleware('permission:edit.customers');
         Route::put('payments/{payment}', [PaymentController::class, 'update'])->middleware('permission:edit.customers');
         Route::delete('payments/{payment}', [PaymentController::class, 'destroy'])->middleware('permission:delete.customers');

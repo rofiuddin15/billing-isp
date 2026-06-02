@@ -131,7 +131,7 @@ class CustomerController extends Controller
             $adminFee = (float) \App\Models\AppSetting::get('registration_admin_fee', 0);
             $discount = (float) \App\Models\AppSetting::get('registration_discount', 0);
 
-            $subtotal = $package->price + $installationFee + $adminFee - $discount;
+            $subtotal = $installationFee + $adminFee - $discount;
             $taxAmount = ($taxRate / 100) * $subtotal;
             $totalAmount = $subtotal + $taxAmount;
 

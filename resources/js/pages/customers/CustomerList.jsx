@@ -64,15 +64,21 @@ const CustomerList = () => {
     const [discount, setDiscount] = useState('');
     const [paymentType, setPaymentType] = useState('full');
     const [installmentAmount, setInstallmentAmount] = useState('');
+    const [selectedInvoices, setSelectedInvoices] = useState([]);
+    const [isBatchPaying, setIsBatchPaying] = useState(false);
 
     useEffect(() => {
-        if (payingInvoice) {
+        if (payingInvoice || isBatchPaying) {
             setUseBalance(false);
             setDiscount('');
             setPaymentType('full');
             setInstallmentAmount('');
-            const remaining = Number(payingInvoice.amount || 0) - Number(payingInvoice.discount || 0) - Number(payingInvoice.paid_amount || 0);
-            setAmountPaid(String(Math.max(0, remaining)));
+            if (!isBatchPaying) {
+                const remaining = Number(payingInvoice.amount || 0) - Number(payingInvoice.discount || 0) - Number(payingInvoice.paid_amount || 0);
+                setAmountPaid(String(Math.max(0, remaining)));
+            } else {
+                setAmountPaid('');
+            }
         } else {
             setUseBalance(false);
             setDiscount('');
@@ -80,11 +86,11 @@ const CustomerList = () => {
             setInstallmentAmount('');
             setAmountPaid('');
         }
-    }, [payingInvoice]);
+    }, [payingInvoice, isBatchPaying]);
 
     // Dynamically adjust amountPaid based on discount, installment settings, and balance deductions
     useEffect(() => {
-        if (payingInvoice) {
+        if (payingInvoice && !isBatchPaying) {
             const originalAmt = Number(payingInvoice.amount || 0);
             const paidSoFar = Number(payingInvoice.paid_amount || 0);
             const currentDiscount = Number(payingInvoice.discount || 0);
@@ -100,8 +106,16 @@ const CustomerList = () => {
             const maxBalanceUse = useBalance ? Math.min(targetToPay, custBal) : 0;
             
             setAmountPaid(String(Math.max(0, targetToPay - maxBalanceUse)));
+        } else if (isBatchPaying) {
+            let totalOutstanding = 0;
+            unpaidInvoices.filter(inv => selectedInvoices.includes(inv.id)).forEach(inv => {
+                totalOutstanding += Math.max(0, Number(inv.amount || 0) - Number(inv.discount || 0) - Number(inv.paid_amount || 0));
+            });
+            const custBal = Number(selectedCustomer?.balance || 0);
+            const maxBalanceUse = useBalance ? Math.min(totalOutstanding, custBal) : 0;
+            setAmountPaid(String(Math.max(0, totalOutstanding - maxBalanceUse)));
         }
-    }, [discount, useBalance, paymentType, installmentAmount, payingInvoice, selectedCustomer]);
+    }, [discount, useBalance, paymentType, installmentAmount, payingInvoice, selectedCustomer, isBatchPaying, selectedInvoices, unpaidInvoices]);
 
     const applyFilters = (page = 1, currentSearch = search) => {
         dispatch(fetchCustomers({
@@ -200,6 +214,8 @@ const CustomerList = () => {
         setPayLoading(true);
         setShowPayModal(true);
         setPayingInvoice(null);
+        setSelectedInvoices([]);
+        setIsBatchPaying(false);
         setPaymentSuccess(false);
         apiFetch(`/api/payments?customer_id=${customer.id}&status=unpaid`)
             .then(res => setUnpaidInvoices(res.data))
@@ -226,6 +242,31 @@ const CustomerList = () => {
             setPayingInvoice(paidInvoice);
             const res = await apiFetch(`/api/payments?customer_id=${selectedCustomer.id}&status=unpaid`);
             setUnpaidInvoices(res.data);
+            dispatch(fetchCustomers({ page: pagination.currentPage, search }));
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setPayLoading(false);
+        }
+    };
+
+    const handleBatchPay = async () => {
+        if (selectedInvoices.length === 0) return;
+        setPayLoading(true);
+        try {
+            const res = await apiFetch('/api/payments/batch-pay', {
+                method: 'POST',
+                body: JSON.stringify({
+                    customer_id: selectedCustomer.id,
+                    payment_ids: selectedInvoices,
+                    amount_paid: amountPaid,
+                    use_balance: useBalance
+                })
+            });
+            toast.success(res.message);
+            setPaymentSuccess(true);
+            const invoiceRes = await apiFetch(`/api/payments?customer_id=${selectedCustomer.id}&status=unpaid`);
+            setUnpaidInvoices(invoiceRes.data);
             dispatch(fetchCustomers({ page: pagination.currentPage, search }));
         } catch (error) {
             toast.error(error.message);
@@ -626,20 +667,27 @@ const CustomerList = () => {
 
                             <div className="space-y-3">
                                 <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                                    <Calendar className="w-3 h-3" /> {payingInvoice ? 'Konfirmasi Pembayaran' : 'Tagihan Belum Dibayar'}
+                                    <Calendar className="w-3 h-3" /> {(payingInvoice || isBatchPaying) ? 'Konfirmasi Pembayaran' : 'Tagihan Belum Dibayar'}
                                 </h4>
 
-                                {payLoading && !payingInvoice ? (
+                                {payLoading && !payingInvoice && !isBatchPaying ? (
                                     <div className="py-8 text-center text-slate-400 italic font-medium text-xs">Memuat tagihan...</div>
-                                ) : payingInvoice ? ( (() => {
-                                    const originalAmt = Number(payingInvoice.amount || 0);
-                                    const paidSoFar = Number(payingInvoice.paid_amount || 0);
-                                    const currentDiscount = Number(payingInvoice.discount || 0);
-                                    const discountInputVal = Number(discount || 0);
+                                ) : (payingInvoice || isBatchPaying) ? ( (() => {
+                                    const originalAmt = isBatchPaying ? 0 : Number(payingInvoice?.amount || 0);
+                                    const paidSoFar = isBatchPaying ? 0 : Number(payingInvoice?.paid_amount || 0);
+                                    const currentDiscount = isBatchPaying ? 0 : Number(payingInvoice?.discount || 0);
+                                    const discountInputVal = isBatchPaying ? 0 : Number(discount || 0);
                                     
-                                    const remainingInvoice = Math.max(0, originalAmt - currentDiscount - paidSoFar - discountInputVal);
+                                    let remainingInvoice = 0;
+                                    if (isBatchPaying) {
+                                        unpaidInvoices.filter(inv => selectedInvoices.includes(inv.id)).forEach(inv => {
+                                            remainingInvoice += Math.max(0, Number(inv.amount || 0) - Number(inv.discount || 0) - Number(inv.paid_amount || 0));
+                                        });
+                                    } else {
+                                        remainingInvoice = Math.max(0, originalAmt - currentDiscount - paidSoFar - discountInputVal);
+                                    }
                                     
-                                    const targetToPay = paymentType === 'installment' 
+                                    const targetToPay = paymentType === 'installment' && !isBatchPaying
                                         ? Math.min(remainingInvoice, Number(installmentAmount || 0))
                                         : remainingInvoice;
                                         
@@ -658,8 +706,8 @@ const CustomerList = () => {
                                             {paymentSuccess ? (
                                                 <div className="space-y-3 text-xs">
                                                     <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-700">
-                                                        <span className="text-slate-500 font-medium">Periode Tagihan</span>
-                                                        <span className="font-bold text-slate-800 dark:text-white">{payingInvoice.period}</span>
+                                                        <span className="text-slate-500 font-medium">{isBatchPaying ? 'Tagihan Diproses' : 'Periode Tagihan'}</span>
+                                                        <span className="font-bold text-slate-800 dark:text-white">{isBatchPaying ? `${selectedInvoices.length} Tagihan` : payingInvoice?.period}</span>
                                                     </div>
                                                     <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-700">
                                                         <span className="text-slate-500 font-medium">Nomor Invoice</span>
@@ -699,8 +747,8 @@ const CustomerList = () => {
                                                     {/* Invoices Balance Grid */}
                                                     <div className="grid grid-cols-3 gap-2 pb-2.5 border-b border-slate-200 dark:border-slate-700">
                                                         <div>
-                                                            <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider block">Tagihan Asli</span>
-                                                            <p className="text-xs font-bold text-slate-800 dark:text-white">Rp {originalAmt.toLocaleString()}</p>
+                                                            <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider block">{isBatchPaying ? 'Total Tunggakan' : 'Tagihan Asli'}</span>
+                                                            <p className="text-xs font-bold text-slate-800 dark:text-white">Rp {isBatchPaying ? remainingInvoice.toLocaleString() : originalAmt.toLocaleString()}</p>
                                                         </div>
                                                         <div>
                                                             <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider block">Sudah Dibayar</span>
@@ -715,6 +763,7 @@ const CustomerList = () => {
                                                     {/* Space-Saving Form Parameters Grid */}
                                                     <div className="grid grid-cols-2 gap-3.5">
                                                         {/* Left Column: Payment Type & Installment Amount */}
+                                                        {!isBatchPaying && (
                                                         <div className="space-y-3">
                                                             <div className="space-y-1">
                                                                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Jenis Pembayaran</label>
@@ -755,9 +804,11 @@ const CustomerList = () => {
                                                                 </div>
                                                             )}
                                                         </div>
+                                                        )}
 
                                                         {/* Right Column: Discount & Cash Input */}
-                                                        <div className="space-y-3">
+                                                        <div className={`space-y-3 ${isBatchPaying ? 'col-span-2' : ''}`}>
+                                                            {!isBatchPaying && (
                                                             <div className="space-y-1">
                                                                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Diskon Potongan (Rp)</label>
                                                                 <div className="relative">
@@ -773,6 +824,7 @@ const CustomerList = () => {
                                                                     />
                                                                 </div>
                                                             </div>
+                                                            )}
 
                                                             <div className="space-y-1">
                                                                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Uang Tunai Diterima (Rp)</label>
@@ -850,13 +902,13 @@ const CustomerList = () => {
                                                     {/* Form Actions */}
                                                     <div className="pt-1.5 flex gap-2.5">
                                                         <button 
-                                                            onClick={() => setPayingInvoice(null)}
+                                                            onClick={() => { setPayingInvoice(null); setIsBatchPaying(false); }}
                                                             className="flex-1 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-bold rounded-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-xs"
                                                         >
                                                             Kembali
                                                         </button>
                                                         <button 
-                                                            onClick={handlePayInvoice}
+                                                            onClick={isBatchPaying ? handleBatchPay : handlePayInvoice}
                                                             disabled={payLoading || cashShortfall > 0}
                                                             className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-sm shadow-md transition-all active:scale-95 disabled:opacity-50 text-xs"
                                                         >
@@ -873,6 +925,7 @@ const CustomerList = () => {
                                         <p className="text-emerald-600 dark:text-emerald-400 font-bold text-xs">Luar biasa! Semua tagihan telah lunas.</p>
                                     </div>
                                 ) : (
+                                    <>
                                     <div className="space-y-2 max-h-56 overflow-y-auto pr-1.5 custom-scrollbar">
                                         {unpaidInvoices.map((inv) => {
                                             const original = Number(inv.amount || 0);
@@ -881,8 +934,26 @@ const CustomerList = () => {
                                             const remaining = Math.max(0, original - discountAmt - paid);
 
                                             return (
-                                                <div key={inv.id} className="flex items-center justify-between p-3 border border-slate-200 dark:border-slate-800 rounded-sm hover:border-indigo-500 hover:bg-indigo-50/30 dark:hover:bg-indigo-900/5 transition-all group">
+                                                <div 
+                                                    key={inv.id} 
+                                                    onClick={() => {
+                                                        setSelectedInvoices(prev => 
+                                                            prev.includes(inv.id) ? prev.filter(id => id !== inv.id) : [...prev, inv.id]
+                                                        );
+                                                    }}
+                                                    className={`flex items-center justify-between p-3 border rounded-sm transition-all group cursor-pointer ${
+                                                        selectedInvoices.includes(inv.id) 
+                                                            ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-900/20'
+                                                            : 'border-slate-200 dark:border-slate-800 hover:border-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                                                    }`}
+                                                >
                                                     <div className="flex items-center gap-3">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            checked={selectedInvoices.includes(inv.id)}
+                                                            readOnly
+                                                            className="w-4 h-4 text-indigo-600 rounded border-slate-300 pointer-events-none"
+                                                        />
                                                         <div className="p-1.5 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded shadow-sm">
                                                             <Calendar className="w-4 h-4 text-slate-400" />
                                                         </div>
@@ -899,7 +970,10 @@ const CustomerList = () => {
                                                             )}
                                                         </div>
                                                         <button 
-                                                            onClick={() => setPayingInvoice(inv)}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setPayingInvoice(inv);
+                                                            }}
                                                             className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-sm shadow-md transition-all active:scale-95"
                                                         >
                                                             Pilih
@@ -909,6 +983,19 @@ const CustomerList = () => {
                                             );
                                         })}
                                     </div>
+                                    <div className="flex flex-col gap-2">
+                                        {!payingInvoice && !isBatchPaying && selectedInvoices.length > 0 && (
+                                            <div className="mt-4 animate-in slide-in-from-bottom-2">
+                                                <button 
+                                                    onClick={() => setIsBatchPaying(true)}
+                                                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-sm shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 text-sm"
+                                                >
+                                                    <Banknote className="w-4 h-4" /> Bayar {selectedInvoices.length} Tagihan Terpilih
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                    </>
                                 )}
                             </div>
                         </div>

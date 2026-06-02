@@ -234,6 +234,141 @@ class PaymentController extends Controller
         });
     }
 
+    public function batchPay(Request $request)
+    {
+        $request->validate([
+            'customer_id' => 'required|exists:customers,id',
+            'payment_ids' => 'required|array|min:1',
+            'payment_ids.*' => 'exists:payments,id',
+            'amount_paid' => 'required|numeric|min:0',
+            'use_balance' => 'nullable|boolean',
+        ]);
+
+        $customer = Customer::findOrFail($request->customer_id);
+        
+        // Fetch requested payments that are unpaid and belong to this customer
+        $payments = Payment::whereIn('id', $request->payment_ids)
+            ->where('customer_id', $customer->id)
+            ->where('status', 'unpaid')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        if ($payments->isEmpty()) {
+            return response()->json(['message' => 'Tidak ada tagihan yang valid untuk dibayar.'], 422);
+        }
+
+        $useBalance = filter_var($request->input('use_balance'), FILTER_VALIDATE_BOOLEAN);
+        $cashPaid = (float)$request->amount_paid;
+        
+        $totalOutstanding = 0;
+        foreach ($payments as $payment) {
+            $remaining = max(0, (float)$payment->amount - (float)($payment->discount ?? 0) - (float)$payment->paid_amount);
+            $totalOutstanding += $remaining;
+        }
+
+        $availableBalance = (float)$customer->balance;
+        
+        $deductedFromBalance = 0;
+        if ($useBalance) {
+            // How much balance can we use? We use it to cover what cash doesn't.
+            $balanceNeeded = max(0, $totalOutstanding - $cashPaid);
+            $deductedFromBalance = min($availableBalance, $balanceNeeded);
+        }
+
+        $totalMoneyAvailable = $cashPaid + $deductedFromBalance;
+
+        if ($totalMoneyAvailable < $totalOutstanding && $totalMoneyAvailable <= 0) {
+            return response()->json([
+                'message' => 'Jumlah uang tidak mencukupi untuk melakukan pembayaran.'
+            ], 422);
+        }
+
+        $remainingMoney = $totalMoneyAvailable;
+        $paidPaymentIds = [];
+        $totalPaidToInvoices = 0;
+
+        return DB::transaction(function () use ($payments, $customer, $cashPaid, $deductedFromBalance, &$remainingMoney, &$paidPaymentIds, &$totalPaidToInvoices) {
+            foreach ($payments as $payment) {
+                if ($remainingMoney <= 0) break;
+
+                $remainingInvoice = max(0, (float)$payment->amount - (float)($payment->discount ?? 0) - (float)$payment->paid_amount);
+                if ($remainingInvoice <= 0) continue;
+
+                $payAmount = min($remainingInvoice, $remainingMoney);
+                
+                $newPaidAmount = (float)$payment->paid_amount + $payAmount;
+                $isFullyPaid = ($newPaidAmount + (float)($payment->discount ?? 0)) >= (float)$payment->amount;
+
+                $payment->update([
+                    'status' => $isFullyPaid ? 'paid' : 'unpaid',
+                    'paid_amount' => $newPaidAmount,
+                    'confirmed_by' => auth('api')->id(),
+                ]);
+
+                $remainingMoney -= $payAmount;
+                $totalPaidToInvoices += $payAmount;
+                $paidPaymentIds[] = $payment->invoice_number;
+            }
+
+            $excessCash = max(0, $cashPaid - $totalPaidToInvoices); 
+            
+            if ($deductedFromBalance > 0 || $excessCash > 0) {
+                $customer->balance = (float)$customer->balance - $deductedFromBalance + $excessCash;
+                $customer->save();
+            }
+
+            // Record one combined CashFlow
+            if ($cashPaid > 0 || $deductedFromBalance > 0) {
+                $category = \App\Models\TransactionCategory::firstOrCreate(['name' => 'Bulanan']);
+                
+                $descParts = [];
+                $descParts[] = "Cash: Rp " . number_format($cashPaid);
+                if ($deductedFromBalance > 0) {
+                    $descParts[] = "Saldo: Rp " . number_format($deductedFromBalance);
+                }
+                if ($excessCash > 0) {
+                    $descParts[] = "Lebih: Rp " . number_format($excessCash);
+                }
+                
+                $invoicesStr = implode(', ', $paidPaymentIds);
+
+                CashFlow::create([
+                    'transaction_date' => now()->toDateString(),
+                    'type' => 'income',
+                    'category_id' => $category->id,
+                    'amount' => $cashPaid,
+                    'description' => "Batch payment for {$customer->name} ({$invoicesStr}) - " . implode(', ', $descParts),
+                    'reference_id' => null,
+                    'created_by' => auth('api')->id(),
+                ]);
+            }
+
+            // Log activity
+            $logMsg = "Staff mengonfirmasi pembayaran batch untuk pelanggan {$customer->name}. Tagihan terproses: " . implode(', ', $paidPaymentIds) . ".";
+            if ($deductedFromBalance > 0) {
+                $logMsg .= " Potong Saldo: Rp " . number_format($deductedFromBalance) . ".";
+            }
+            if ($cashPaid > 0) {
+                $logMsg .= " Tunai: Rp " . number_format($cashPaid) . ".";
+            }
+            if ($excessCash > 0) {
+                $logMsg .= " Lebih bayar Rp " . number_format($excessCash) . " masuk ke saldo pelanggan.";
+            }
+
+            ActivityLog::log(
+                "Pembayaran Tagihan (Batch)", 
+                "Pembayaran", 
+                $logMsg
+            );
+
+            return response()->json([
+                'message' => 'Pembayaran massal berhasil diproses.',
+                'processed_invoices' => $paidPaymentIds,
+                'customer_balance' => $customer->balance
+            ]);
+        });
+    }
+
     public function destroy(Payment $payment)
     {
         $payment->delete();
