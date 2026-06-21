@@ -114,6 +114,13 @@ class DashboardController extends Controller
                 'month_expense' => (float)$currentMonthExpense,
                 'balance' => (float)($currentMonthIncome - $currentMonthExpense),
                 'total_arrears' => (float)$totalArrears,
+                'paid_customers' => \App\Models\Payment::where('period', $currentPeriod)->where('status', 'paid')->distinct('customer_id')->count('customer_id'),
+                'customers_in_arrears' => \App\Models\Payment::where('status', 'unpaid')->where(function($q) use ($dueDateDay, $todayDay, $currentPeriod) {
+                    $q->where('period', '<', $currentPeriod);
+                    if ($todayDay > $dueDateDay) {
+                        $q->orWhere('period', $currentPeriod);
+                    }
+                })->distinct('customer_id')->count('customer_id'),
                 'growth' => [
                     'customers' => round($customerGrowth, 1),
                     'income' => round($incomeGrowth, 1),

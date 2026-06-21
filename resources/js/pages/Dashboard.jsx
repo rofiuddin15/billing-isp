@@ -36,15 +36,17 @@ const DashboardCard = ({ title, value, icon: Icon, subValue, trend, colorClass, 
             <div>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">{title}</p>
                 <h3 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">{value}</h3>
-                <div className="flex items-center mt-3 bg-slate-50 dark:bg-slate-800/50 w-fit px-2 py-1 rounded-lg">
-                    {trend === 'up' ? (
-                        <ArrowUpRight className="w-3.5 h-3.5 text-emerald-500 mr-1" />
-                    ) : (
-                        <ArrowDownRight className="w-3.5 h-3.5 text-rose-500 mr-1" />
-                    )}
-                    <span className={`text-[11px] font-bold ${trend === 'up' ? 'text-emerald-500' : 'text-rose-500'}`}>{subValue}</span>
-                    <span className="text-[10px] text-slate-400 ml-1 font-medium">vs last month</span>
-                </div>
+                {subValue && (
+                    <div className="flex items-center mt-3 bg-slate-50 dark:bg-slate-800/50 w-fit px-2 py-1 rounded-lg">
+                        {trend === 'up' ? (
+                            <ArrowUpRight className="w-3.5 h-3.5 text-emerald-500 mr-1" />
+                        ) : (
+                            <ArrowDownRight className="w-3.5 h-3.5 text-rose-500 mr-1" />
+                        )}
+                        <span className={`text-[11px] font-bold ${trend === 'up' ? 'text-emerald-500' : 'text-rose-500'}`}>{subValue}</span>
+                        <span className="text-[10px] text-slate-400 ml-1 font-medium">vs last month</span>
+                    </div>
+                )}
             </div>
             <div className={`p-3.5 rounded-lg bg-gradient-to-br ${gradient} text-white shadow-lg ${colorClass} shadow-current/20`}>
                 <Icon className="w-5 h-5" />
@@ -128,19 +130,15 @@ const Dashboard = () => {
                     gradient="from-amber-400 to-orange-500"
                 />
                 <DashboardCard 
-                    title="Pendapatan Bulan Ini" 
-                    value={`Rp ${Number(data.stats.month_income).toLocaleString()}`} 
+                    title="Pelanggan Bayar" 
+                    value={data.stats.paid_customers} 
                     icon={TrendingUp} 
-                    subValue={`${data.stats.growth.income > 0 ? '+' : ''}${data.stats.growth.income}%`} 
-                    trend={data.stats.growth.income >= 0 ? 'up' : 'down'}
                     gradient="from-emerald-400 to-teal-600"
                 />
                 <DashboardCard 
-                    title="Biaya Operasional" 
-                    value={`Rp ${Number(data.stats.month_expense).toLocaleString()}`} 
+                    title="Pelanggan Menunggak" 
+                    value={data.stats.customers_in_arrears} 
                     icon={TrendingDown} 
-                    subValue={`${data.stats.growth.expense > 0 ? '+' : ''}${data.stats.growth.expense}%`} 
-                    trend={data.stats.growth.expense <= 0 ? 'up' : 'down'} 
                     gradient="from-rose-400 to-pink-600"
                 />
             </div>
