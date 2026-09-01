@@ -13,7 +13,7 @@ const MonthlyPackageList = () => {
     const { permissions = [] } = useSelector(state => state.auth);
     const [showModal, setShowModal] = useState(false);
     const [editingPkg, setEditingPkg] = useState(null);
-    const [formData, setFormData] = useState({ name: '', price: '', description: '' });
+    const [formData, setFormData] = useState({ name: '', price: '', description: '', mikrotik_profile_name: '' });
 
     useEffect(() => {
         dispatch(fetchPackages());
@@ -22,10 +22,10 @@ const MonthlyPackageList = () => {
     const handleOpenModal = (pkg = null) => {
         if (pkg) {
             setEditingPkg(pkg);
-            setFormData({ name: pkg.name, price: pkg.price, description: pkg.description || '' });
+            setFormData({ name: pkg.name, price: pkg.price, description: pkg.description || '', mikrotik_profile_name: pkg.mikrotik_profile_name || '' });
         } else {
             setEditingPkg(null);
-            setFormData({ name: '', price: '', description: '' });
+            setFormData({ name: '', price: '', description: '', mikrotik_profile_name: '' });
         }
         setShowModal(true);
     };
@@ -81,7 +81,9 @@ const MonthlyPackageList = () => {
                     </div>
                     <div>
                         <div className="text-sm font-bold text-slate-800 dark:text-white">{info.getValue()}</div>
-                        <div className="text-[10px] text-slate-400 font-medium truncate max-w-[200px]">{info.row.original.description || 'Tidak ada deskripsi'}</div>
+                        <div className="text-[10px] text-slate-400 font-medium truncate max-w-[200px]">
+                            {info.row.original.mikrotik_profile_name ? `Profile: ${info.row.original.mikrotik_profile_name}` : 'Tidak terhubung Mikrotik'}
+                        </div>
                     </div>
                 </div>
             )
@@ -188,8 +190,18 @@ const MonthlyPackageList = () => {
                                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-4 py-2.5 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
                                     value={formData.description}
                                     onChange={e => setFormData({...formData, description: e.target.value})}
-                                    rows={3}
+                                    rows={2}
                                     placeholder="Detail tentang paket ini..."
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Profile Mikrotik PPPoE (Opsional)</label>
+                                <input 
+                                    type="text"
+                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-4 py-2.5 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                                    value={formData.mikrotik_profile_name}
+                                    onChange={e => setFormData({...formData, mikrotik_profile_name: e.target.value})}
+                                    placeholder="Misal: 10M-Profile"
                                 />
                             </div>
                             <div className="pt-4">

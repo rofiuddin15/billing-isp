@@ -14,7 +14,9 @@ import {
     ShieldCheck,
     ChevronDown,
     UserCircle,
-    Wrench
+    Wrench,
+    Server,
+    Wifi
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 
@@ -86,9 +88,11 @@ const Sidebar = () => {
             title: 'DUKUNGAN',
             items: [
                 { icon: Megaphone, label: 'Aduan', path: '/complaints', permission: 'menu.complaints' },
+                { icon: Wifi, label: 'Koneksi Aktif', path: '/support/mikrotik-active', permission: 'menu.mikrotik' },
                 { icon: Wrench, label: 'Kinerja Teknisi', path: '/support/technician-performance', permission: 'menu.technician_performances' },
                 { icon: UserCircle, label: 'Manajemen Staff', path: '/master/users', permission: 'menu.users' },
                 { icon: ShieldCheck, label: 'Akses & Role', path: '/master/roles', permission: 'menu.roles' },
+                { icon: Server, label: 'Data Router', path: '/system/routers', permission: 'menu.mikrotik' },
                 { icon: FileText, label: 'Log Aktivitas', path: '/system/logs', permission: 'menu.logs' },
                 { icon: Settings, label: 'Pengaturan', path: '/settings', permission: 'menu.settings' },
             ]

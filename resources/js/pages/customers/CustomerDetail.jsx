@@ -180,6 +180,18 @@ const CustomerDetail = () => {
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-4 border-t border-slate-50 dark:border-slate-800 pt-4">
+                                    <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-slate-400">
+                                        <ShieldCheck className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Router Mikrotik</p>
+                                        <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                                            {customer.router?.name || 'Tidak ada'} 
+                                            {customer.pppoe_password && <span className="ml-2 text-[10px] font-mono text-slate-400 border border-slate-200 dark:border-slate-700 px-1 rounded">***</span>}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-4 border-t border-slate-50 dark:border-slate-800 pt-4">
                                     <div className="p-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg text-emerald-600">
                                         <CreditCard className="w-5 h-5" />
                                     </div>

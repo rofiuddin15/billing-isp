@@ -30,6 +30,8 @@ import FinanceSettings from './pages/finance/FinanceSettings';
 import FinancialReports from './pages/finance/FinancialReports';
 import ComplaintList from './pages/support/ComplaintList';
 import TechnicianPerformanceReport from './pages/support/TechnicianPerformanceReport';
+import RouterList from './pages/system/RouterList';
+import ActiveUsers from './pages/support/ActiveUsers';
 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -64,8 +66,10 @@ root.render(
                     <Route path="master/transaction-categories" element={<TransactionCategoryList />} />
                     <Route path="complaints" element={<ComplaintList />} />
                     <Route path="support/technician-performance" element={<TechnicianPerformanceReport />} />
+                    <Route path="support/mikrotik-active" element={<ActiveUsers />} />
                     <Route path="settings" element={<Settings />} />
                     <Route path="system/logs" element={<AuditTrail />} />
+                    <Route path="system/routers" element={<RouterList />} />
                 </Route>
             </Routes>
         </BrowserRouter>

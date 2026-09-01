@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\ActivityLog;
+use App\Services\MikrotikService;
 use Illuminate\Http\Request;
 
 class CustomerController extends Controller
@@ -89,6 +90,8 @@ class CustomerController extends Controller
             'email' => 'nullable|email',
             'monthly_package_id' => 'required|exists:monthly_packages,id',
             'status' => 'required|in:active,isolir,non-active',
+            'router_id' => 'nullable|exists:routers,id',
+            'pppoe_password' => 'nullable|string',
         ]);
 
         $datePrefix = now()->format('Ymd');
@@ -145,6 +148,24 @@ class CustomerController extends Controller
                 ]);
             }
 
+            // Sync to Mikrotik if active and router selected
+            if ($customer->router_id && $customer->status === 'active') {
+                try {
+                    $customer->load('router', 'monthlyPackage');
+                    if ($customer->monthlyPackage && $customer->monthlyPackage->mikrotik_profile_name) {
+                        $service = new MikrotikService($customer->router);
+                        $service->syncPppoeSecret(
+                            $customer->customer_code,
+                            $customer->pppoe_password ?? '123456',
+                            $customer->monthlyPackage->mikrotik_profile_name,
+                            $customer->name
+                        );
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Mikrotik Sync Error: ' . $e->getMessage());
+                }
+            }
+
             ActivityLog::log(
                 "Pendaftaran Pelanggan", 
                 "Pelanggan", 
@@ -187,9 +208,33 @@ class CustomerController extends Controller
             'status' => 'required|in:active,isolir,non-active',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
+            'router_id' => 'nullable|exists:routers,id',
+            'pppoe_password' => 'nullable|string',
         ]);
 
         $customer->update($validated);
+
+        // Sync to Mikrotik
+        if ($customer->router_id) {
+            try {
+                $customer->load('router', 'monthlyPackage');
+                $service = new MikrotikService($customer->router);
+                if ($customer->status === 'active' && $customer->monthlyPackage && $customer->monthlyPackage->mikrotik_profile_name) {
+                    $service->syncPppoeSecret(
+                        $customer->customer_code,
+                        $customer->pppoe_password ?? '123456',
+                        $customer->monthlyPackage->mikrotik_profile_name,
+                        $customer->name
+                    );
+                } elseif ($customer->status === 'isolir') {
+                    $service->disablePppoeSecret($customer->customer_code);
+                } elseif ($customer->status === 'non-active') {
+                    $service->removePppoeSecret($customer->customer_code);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Mikrotik Sync Error: ' . $e->getMessage());
+            }
+        }
 
         ActivityLog::log(
             "Pembaruan Data Pelanggan", 
@@ -204,6 +249,17 @@ class CustomerController extends Controller
     {
         $customerName = $customer->name;
         $customerCode = $customer->customer_code;
+        
+        if ($customer->router_id) {
+            try {
+                $customer->load('router');
+                $service = new MikrotikService($customer->router);
+                $service->removePppoeSecret($customerCode);
+            } catch (\Exception $e) {
+                \Log::error('Mikrotik Sync Error: ' . $e->getMessage());
+            }
+        }
+        
         $customer->delete();
 
         ActivityLog::log(

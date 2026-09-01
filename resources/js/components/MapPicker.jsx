@@ -3,13 +3,16 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 // Get token from .env (VITE_MAPBOX_TOKEN)
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN; 
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || 'pk.eyJ1IjoiZHVtbXkiLCJhIjoiZG15In0.dummy'; 
 
 const MapPicker = ({ lat, lng, onChange }) => {
     const mapContainer = useRef(null);
     const map = useRef(null);
     const marker = useRef(null);
     const [zoom, setZoom] = useState(12);
+
+    const parsedLng = lng ? Number(lng) : 113.4312;
+    const parsedLat = lat ? Number(lat) : -7.0428;
 
     useEffect(() => {
         if (map.current) return; // initialize map only once
@@ -19,7 +22,7 @@ const MapPicker = ({ lat, lng, onChange }) => {
         map.current = new mapboxgl.Map({
             container: mapContainer.current,
             style: 'mapbox://styles/mapbox/streets-v12',
-            center: [lng || 113.4312, lat || -7.0428], // Default to Palengaan Daja, Pamekasan
+            center: [parsedLng, parsedLat], // Default to Palengaan Daja, Pamekasan
             zoom: zoom
         });
 
@@ -31,7 +34,7 @@ const MapPicker = ({ lat, lng, onChange }) => {
             draggable: true,
             color: '#6366f1'
         })
-        .setLngLat([lng || 113.4312, lat || -7.0428])
+        .setLngLat([parsedLng, parsedLat])
         .addTo(map.current);
 
         marker.current.on('dragend', () => {
@@ -48,8 +51,8 @@ const MapPicker = ({ lat, lng, onChange }) => {
 
     useEffect(() => {
         if (marker.current && lat && lng) {
-            marker.current.setLngLat([lng, lat]);
-            map.current.flyTo({ center: [lng, lat] });
+            marker.current.setLngLat([Number(lng), Number(lat)]);
+            map.current.flyTo({ center: [Number(lng), Number(lat)] });
         }
     }, [lat, lng]);
 

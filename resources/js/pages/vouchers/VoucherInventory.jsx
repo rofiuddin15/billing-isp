@@ -10,7 +10,8 @@ const VoucherInventory = () => {
     const { vouchers, packages, loading, pagination } = useSelector(state => state.vouchers);
     const { permissions = [] } = useSelector(state => state.auth);
     const [showGenerateModal, setShowGenerateModal] = useState(false);
-    const [generateData, setGenerateData] = useState({ package_id: '', count: 10 });
+    const [generateType, setGenerateType] = useState('random'); // 'random' or 'custom'
+    const [generateData, setGenerateData] = useState({ package_id: '', count: 10, codes: '' });
     const [search, setSearch] = useState('');
 
     const handleSearch = (val) => {
@@ -25,7 +26,17 @@ const VoucherInventory = () => {
 
     const handleGenerate = async (e) => {
         e.preventDefault();
-        const result = await dispatch(generateVouchers(generateData));
+        
+        let payload = { package_id: generateData.package_id };
+        if (generateType === 'random') {
+            payload.count = generateData.count;
+        } else {
+            const codeArr = generateData.codes.split(',').map(c => c.trim()).filter(c => c);
+            if (codeArr.length === 0) return toast.error('Masukkan minimal 1 kode khusus');
+            payload.codes = codeArr;
+        }
+        
+        const result = await dispatch(generateVouchers(payload));
         if (generateVouchers.fulfilled.match(result)) {
             setShowGenerateModal(false);
         }
@@ -167,18 +178,37 @@ const VoucherInventory = () => {
                                     ))}
                                 </select>
                             </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Jumlah</label>
-                                <input 
-                                    type="number" 
-                                    min="1" 
-                                    max="1000"
-                                    required
-                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-4 py-2.5 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
-                                    value={generateData.count}
-                                    onChange={e => setGenerateData({...generateData, count: e.target.value})}
-                                />
+                            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-sm">
+                                <button type="button" onClick={() => setGenerateType('random')} className={`flex-1 py-1.5 text-xs font-bold rounded-sm ${generateType === 'random' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500'}`}>Random</button>
+                                <button type="button" onClick={() => setGenerateType('custom')} className={`flex-1 py-1.5 text-xs font-bold rounded-sm ${generateType === 'custom' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500'}`}>Khusus</button>
                             </div>
+                            
+                            {generateType === 'random' ? (
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Jumlah Voucher</label>
+                                    <input 
+                                        type="number" 
+                                        min="1" 
+                                        max="1000"
+                                        required
+                                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-4 py-2.5 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                                        value={generateData.count}
+                                        onChange={e => setGenerateData({...generateData, count: e.target.value})}
+                                    />
+                                </div>
+                            ) : (
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Kode Khusus (Pisahkan dengan koma)</label>
+                                    <textarea 
+                                        required
+                                        rows={3}
+                                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-4 py-2.5 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                                        value={generateData.codes}
+                                        onChange={e => setGenerateData({...generateData, codes: e.target.value})}
+                                        placeholder="VOUCHER1, VOUCHER2, VOUCHER3"
+                                    />
+                                </div>
+                            )}
                             <div className="pt-4">
                                 <button 
                                     type="submit"

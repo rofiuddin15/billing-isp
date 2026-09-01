@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\MonthlyPackageController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\VoucherPackageController;
 use App\Http\Controllers\Api\VoucherController;
+use App\Http\Controllers\Api\RouterController;
+use App\Http\Controllers\Api\MikrotikSyncController;
 use App\Http\Controllers\Api\CashFlowController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\UserController;
@@ -80,6 +82,15 @@ Route::group(['middleware' => 'auth:api'], function() {
 
     // 5. Arus Kas (Finance)
     Route::group(['middleware' => 'permission:menu.finance'], function() {
+        Route::get('/dashboard', [DashboardController::class, 'index']);
+        Route::get('/dashboard/revenue-chart', [DashboardController::class, 'revenueChart']);
+
+        // Mikrotik Routers
+        Route::post('/routers/test-connection', [RouterController::class, 'testConnection']);
+        Route::apiResource('routers', RouterController::class);
+        Route::get('mikrotik/{router}/active-users', [MikrotikSyncController::class, 'getActiveUsers']);
+        Route::get('mikrotik/{router}/profiles', [MikrotikSyncController::class, 'getProfiles']);
+        
         Route::get('cash-flow', [CashFlowController::class, 'index']);
         Route::get('cash-flow/stats', [CashFlowController::class, 'stats']);
         Route::get('cash-flow/{cash_flow}', [CashFlowController::class, 'show']);

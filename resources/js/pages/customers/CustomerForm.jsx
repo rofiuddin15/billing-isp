@@ -16,9 +16,8 @@ const schema = z.object({
     email: z.string().email().optional().or(z.literal('')),
     address: z.string().optional(),
     phone: z.string().optional(),
-    pppoe_user: z.string().optional(),
-    monthly_package_id: z.coerce.number().min(1),
-    status: z.enum(['active', 'isolir', 'non-active']),
+    router_id: z.coerce.number().optional().nullable(),
+    pppoe_password: z.string().optional(),
     latitude: z.coerce.number().optional().nullable(),
     longitude: z.coerce.number().optional().nullable(),
 });
@@ -42,8 +41,12 @@ const CustomerForm = () => {
     const lat = watch('latitude');
     const lng = watch('longitude');
 
+    const [routers, setRouters] = useState([]);
+
     useEffect(() => {
         dispatch(fetchPackages());
+        
+        apiFetch('/api/routers').then(data => setRouters(data)).catch(() => {});
 
         if (id) {
             const fetchData = async () => {
@@ -133,12 +136,24 @@ const CustomerForm = () => {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 block">Pengguna PPPoE</label>
+                                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 block">Password PPPoE</label>
                                 <input 
-                                    {...register('pppoe_user')}
+                                    {...register('pppoe_password')}
                                     className="w-full bg-slate-50 dark:bg-slate-950 border-0 ring-1 ring-slate-200 dark:ring-slate-800 focus:ring-2 focus:ring-indigo-500 rounded-sm px-4 py-3 text-slate-800 dark:text-white placeholder:text-slate-400 transition-all outline-none"
-                                    placeholder="user@mikrotik"
+                                    placeholder="Kosongkan jika default"
                                 />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 block">Router Mikrotik</label>
+                                <select 
+                                    {...register('router_id')}
+                                    className="w-full bg-slate-50 dark:bg-slate-950 border-0 ring-1 ring-slate-200 dark:ring-slate-800 focus:ring-2 focus:ring-indigo-500 rounded-sm px-4 py-3 text-slate-800 dark:text-white transition-all outline-none"
+                                >
+                                    <option value="">Pilih Router (Opsional)</option>
+                                    {routers.map(router => (
+                                        <option key={router.id} value={router.id}>{router.name}</option>
+                                    ))}
+                                </select>
                             </div>
                             <div className="md:col-span-2 space-y-2">
                                 <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 block">Alamat</label>

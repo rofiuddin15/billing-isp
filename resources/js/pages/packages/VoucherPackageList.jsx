@@ -17,11 +17,18 @@ const VoucherPackageList = () => {
         name: '', 
         price: '', 
         duration_minutes: '', 
-        active_period_days: '' 
+        active_period_days: '',
+        router_id: '',
+        mikrotik_profile_name: '',
+        mikrotik_rate_limit: '',
+        mikrotik_shared_users: 1,
+        mikrotik_address_pool: ''
     });
+    const [routers, setRouters] = useState([]);
 
     useEffect(() => {
         dispatch(fetchVoucherPackages());
+        apiFetch('/api/routers').then(data => setRouters(data)).catch(() => {});
     }, [dispatch]);
 
     const handleOpenModal = (pkg = null) => {
@@ -31,7 +38,12 @@ const VoucherPackageList = () => {
                 name: pkg.name, 
                 price: pkg.price, 
                 duration_minutes: pkg.duration_minutes, 
-                active_period_days: pkg.active_period_days 
+                active_period_days: pkg.active_period_days,
+                router_id: pkg.router_id || '',
+                mikrotik_profile_name: pkg.mikrotik_profile_name || '',
+                mikrotik_rate_limit: pkg.mikrotik_rate_limit || '',
+                mikrotik_shared_users: pkg.mikrotik_shared_users || 1,
+                mikrotik_address_pool: pkg.mikrotik_address_pool || ''
             });
         } else {
             setEditingPkg(null);
@@ -39,7 +51,12 @@ const VoucherPackageList = () => {
                 name: '', 
                 price: '', 
                 duration_minutes: '', 
-                active_period_days: '' 
+                active_period_days: '',
+                router_id: '',
+                mikrotik_profile_name: '',
+                mikrotik_rate_limit: '',
+                mikrotik_shared_users: 1,
+                mikrotik_address_pool: ''
             });
         }
         setShowModal(true);
@@ -94,7 +111,12 @@ const VoucherPackageList = () => {
                     <div className="p-2 bg-indigo-50 dark:bg-indigo-900/10 rounded">
                         <Ticket className="w-4 h-4 text-indigo-600" />
                     </div>
-                    <span className="text-sm font-bold text-slate-800 dark:text-white">{info.getValue()}</span>
+                    <div>
+                        <div className="text-sm font-bold text-slate-800 dark:text-white">{info.getValue()}</div>
+                        <div className="text-[10px] text-slate-400 font-medium mt-1">
+                            {info.row.original.mikrotik_profile_name ? `Hotspot Profile: ${info.row.original.mikrotik_profile_name}` : 'Tidak terhubung Mikrotik'}
+                        </div>
+                    </div>
                 </div>
             )
         },
@@ -223,16 +245,74 @@ const VoucherPackageList = () => {
                                     />
                                 </div>
                             </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Harga (Rp)</label>
+                                    <input 
+                                        type="number"
+                                        required
+                                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-4 py-2.5 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                                        value={formData.price}
+                                        onChange={e => setFormData({...formData, price: e.target.value})}
+                                        placeholder="2000"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Router Hotspot (Opsional)</label>
+                                    <select 
+                                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-4 py-2.5 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                                        value={formData.router_id}
+                                        onChange={e => setFormData({...formData, router_id: e.target.value})}
+                                    >
+                                        <option value="">Pilih Router</option>
+                                        {routers.map(router => (
+                                            <option key={router.id} value={router.id}>{router.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Harga (Rp)</label>
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Profile Mikrotik Hotspot (Wajib Jika Connect Mikrotik)</label>
                                 <input 
-                                    type="number"
-                                    required
+                                    type="text"
                                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-4 py-2.5 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
-                                    value={formData.price}
-                                    onChange={e => setFormData({...formData, price: e.target.value})}
-                                    placeholder="2000"
+                                    value={formData.mikrotik_profile_name}
+                                    onChange={e => setFormData({...formData, mikrotik_profile_name: e.target.value})}
+                                    placeholder="Misal: VOUCHER-2J"
                                 />
+                                <p className="text-[10px] text-slate-400 mt-1 italic">Sistem akan otomatis membuat/mengupdate Profile ini di Mikrotik sesuai pengaturan di bawah.</p>
+                            </div>
+                            <div className="grid grid-cols-3 gap-4 border-t border-slate-100 dark:border-slate-800 pt-4 mt-4">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Rate Limit (Rx/Tx)</label>
+                                    <input 
+                                        type="text"
+                                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-2 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                                        value={formData.mikrotik_rate_limit}
+                                        onChange={e => setFormData({...formData, mikrotik_rate_limit: e.target.value})}
+                                        placeholder="1M/2M"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Shared Users</label>
+                                    <input 
+                                        type="number"
+                                        min="1"
+                                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-2 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                                        value={formData.mikrotik_shared_users}
+                                        onChange={e => setFormData({...formData, mikrotik_shared_users: e.target.value})}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Address Pool</label>
+                                    <input 
+                                        type="text"
+                                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-2 text-sm text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                                        value={formData.mikrotik_address_pool}
+                                        onChange={e => setFormData({...formData, mikrotik_address_pool: e.target.value})}
+                                        placeholder="hs-pool-1"
+                                    />
+                                </div>
                             </div>
                             <div className="pt-4">
                                 <button 
