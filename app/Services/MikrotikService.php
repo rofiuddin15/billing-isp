@@ -30,10 +30,13 @@ class MikrotikService
                 'user' => $this->router->username,
                 'pass' => $this->router->password ?? '',
                 'port' => (int)$this->router->port,
+                'timeout' => 5, // 5 seconds timeout to prevent 500 error on blocked port
+                'attempts' => 1 // only try once
             ]);
             $this->connected = true;
             return true;
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
+            \Log::error('Mikrotik Connection Error: ' . $e->getMessage());
             return false;
         }
     }
