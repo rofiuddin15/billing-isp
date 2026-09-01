@@ -31,7 +31,9 @@ class MenuPermissionSeeder extends Seeder
             'users',
             'roles',
             'settings',
-            'technician_performances'
+            'technician_performances',
+            'mikrotik',
+            'logs'
         ];
 
         $actions = ['menu', 'create', 'edit', 'delete'];
