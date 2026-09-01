@@ -18,7 +18,7 @@ class RouterController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string',
-            'ip_address' => 'required|ip',
+            'ip_address' => 'required|string',
             'port' => 'required|integer',
             'username' => 'required|string',
             'password' => 'nullable|string',
@@ -33,7 +33,7 @@ class RouterController extends Controller
     public function testConnection(Request $request)
     {
         $validated = $request->validate([
-            'ip_address' => 'required|ip',
+            'ip_address' => 'required|string',
             'port' => 'required|integer',
             'username' => 'required|string',
             'password' => 'nullable|string',
@@ -58,7 +58,7 @@ class RouterController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string',
-            'ip_address' => 'required|ip',
+            'ip_address' => 'required|string',
             'port' => 'required|integer',
             'username' => 'required|string',
             'password' => 'nullable|string',
