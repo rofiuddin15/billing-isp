@@ -47,6 +47,12 @@ class MikrotikService
         return $this->client->query(new Query('/ppp/active/print'))->read();
     }
 
+    public function getPppSecrets()
+    {
+        if (!$this->connect()) return [];
+        return $this->client->query(new Query('/ppp/secret/print'))->read();
+    }
+
     public function getPppProfiles()
     {
         if (!$this->connect()) return [];
@@ -137,6 +143,12 @@ class MikrotikService
     {
         if (!$this->connect()) return [];
         return $this->client->query(new Query('/ip/hotspot/user/profile/print'))->read();
+    }
+
+    public function getHotspotUsers()
+    {
+        if (!$this->connect()) return [];
+        return $this->client->query(new Query('/ip/hotspot/user/print'))->read();
     }
 
     public function addHotspotUser($name, $password, $profile, $server = 'all', $comment = '', $limitUptime = null)

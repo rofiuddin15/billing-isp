@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\CashFlowController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\SyncMikrotikController;
 use App\Http\Controllers\Api\TransactionCategoryController;
 use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\JournalController;
@@ -88,6 +89,11 @@ Route::group(['middleware' => 'auth:api'], function() {
         // Mikrotik Routers
         Route::post('/routers/test-connection', [RouterController::class, 'testConnection']);
         Route::apiResource('routers', RouterController::class);
+
+        Route::post('/sync/ppp-profiles', [SyncMikrotikController::class, 'syncPppProfiles']);
+        Route::post('/sync/ppp-users', [SyncMikrotikController::class, 'syncPppUsers']);
+        Route::post('/sync/hotspot-profiles', [SyncMikrotikController::class, 'syncHotspotProfiles']);
+        Route::post('/sync/hotspot-users', [SyncMikrotikController::class, 'syncHotspotUsers']);
         Route::get('mikrotik/{router}/active-users', [MikrotikSyncController::class, 'getActiveUsers']);
         Route::get('mikrotik/{router}/profiles', [MikrotikSyncController::class, 'getProfiles']);
         

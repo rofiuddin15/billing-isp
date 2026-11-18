@@ -22,10 +22,12 @@ import {
     Upload,
     Download,
     Filter,
-    ChevronDown
+    ChevronDown,
+    RefreshCw
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Badge from '../../components/Badge';
+import SyncMikrotikModal from '../../components/SyncMikrotikModal';
 import apiFetch from '../../utils/api';
 import { toast } from 'react-toastify';
 import { saveAs } from 'file-saver';
@@ -50,6 +52,7 @@ const CustomerList = () => {
     // Modal States
     const [showPayModal, setShowPayModal] = useState(false);
     const [showActionModal, setShowActionModal] = useState(false);
+    const [showSyncModal, setShowSyncModal] = useState(false);
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [unpaidInvoices, setUnpaidInvoices] = useState([]);
     const [payLoading, setPayLoading] = useState(false);
@@ -537,6 +540,15 @@ const CustomerList = () => {
                 hideExport={true}
                 actions={
                     <div className="flex items-center gap-2">
+                        {/* Mikrotik Sync Button */}
+                        <button 
+                            onClick={() => setShowSyncModal(true)}
+                            className="flex items-center px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-sm text-sm font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm active:scale-95"
+                        >
+                            <RefreshCw className="w-4 h-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Sync Mikrotik</span>
+                        </button>
+
                         {/* Filter Toggle Button */}
                         <button 
                             onClick={() => setShowFilters(!showFilters)}
@@ -1064,6 +1076,14 @@ const CustomerList = () => {
                     </div>
                 </div>
             )}
+            <SyncMikrotikModal 
+                isOpen={showSyncModal}
+                onClose={() => setShowSyncModal(false)}
+                onSyncComplete={applyFilters}
+                title="Tarik Pelanggan PPPoE"
+                endpoint="ppp-users"
+                description="Fitur ini akan mengambil semua user PPPoE (PPP Secrets) dari Mikrotik dan menyimpannya sebagai pelanggan baru di sistem. Jika username sudah ada, data akan diupdate."
+            />
         </div>
     );
 };

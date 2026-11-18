@@ -3,13 +3,16 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchVouchers, fetchVoucherPackages, generateVouchers, sellVoucher } from '../../store/slices/voucherSlice';
 import Badge from '../../components/Badge';
 import DataTable from '../../components/DataTable';
-import { Ticket, Plus, Search, Filter, ShoppingCart, Trash2 } from 'lucide-react';
+import { Ticket, Plus, Search, Filter, ShoppingCart, Trash2, RefreshCw } from 'lucide-react';
+import { toast } from 'react-toastify';
+import SyncMikrotikModal from '../../components/SyncMikrotikModal';
 
 const VoucherInventory = () => {
     const dispatch = useDispatch();
     const { vouchers, packages, loading, pagination } = useSelector(state => state.vouchers);
     const { permissions = [] } = useSelector(state => state.auth);
     const [showGenerateModal, setShowGenerateModal] = useState(false);
+    const [showSyncModal, setShowSyncModal] = useState(false);
     const [generateType, setGenerateType] = useState('random'); // 'random' or 'custom'
     const [generateData, setGenerateData] = useState({ package_id: '', count: 10, codes: '' });
     const [search, setSearch] = useState('');
@@ -110,10 +113,6 @@ const VoucherInventory = () => {
         }
     ], [permissions]);
 
-    const filteredCategories = React.useMemo(() => {
-        return packages; // Placeholder if needed, but DataTable handles search
-    }, [packages]);
-
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -141,15 +140,26 @@ const VoucherInventory = () => {
                 searchPlaceholder="Cari kode voucher..."
                 exportFileName="inventori-voucher"
                 actions={
-                    permissions.includes('create.vouchers') && (
-                        <button 
-                            onClick={() => setShowGenerateModal(true)}
-                            className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-semibold transition-all shadow-sm active:scale-95"
-                        >
-                            <Plus className="w-4 h-4 sm:mr-2" />
-                            <span className="hidden sm:inline">Buat Batch</span>
-                        </button>
-                    )
+                    <div className="flex gap-2">
+                        {permissions.includes('create.vouchers') && (
+                            <button 
+                                onClick={() => setShowSyncModal(true)}
+                                className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-sm text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors whitespace-nowrap"
+                            >
+                                <RefreshCw className="w-4 h-4 text-indigo-500" />
+                                Tarik Mikrotik
+                            </button>
+                        )}
+                        {permissions.includes('create.vouchers') && (
+                            <button 
+                                onClick={() => setShowGenerateModal(true)}
+                                className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-semibold transition-all shadow-sm active:scale-95"
+                            >
+                                <Plus className="w-4 h-4 sm:mr-2" />
+                                <span className="hidden sm:inline">Buat Batch</span>
+                            </button>
+                        )}
+                    </div>
                 }
             />
 
@@ -221,6 +231,15 @@ const VoucherInventory = () => {
                     </div>
                 </div>
             )}
+
+            <SyncMikrotikModal 
+                isOpen={showSyncModal}
+                onClose={() => setShowSyncModal(false)}
+                onSyncComplete={() => dispatch(fetchVouchers({ page: 1 }))}
+                title="Tarik User Hotspot"
+                endpoint="hotspot-users"
+                description="Fitur ini akan mengambil semua user Hotspot dari Mikrotik dan menyimpannya sebagai voucher di sistem."
+            />
         </div>
     );
 };

@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { Plus, Edit2, Trash2, Package, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Plus, Edit2, Trash2, Package, X, RefreshCw } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchPackages, deletePackage } from '../../store/slices/packageSlice';
 import apiFetch from '../../utils/api';
 import { toast } from 'react-toastify';
+import SyncMikrotikModal from '../../components/SyncMikrotikModal';
 
 import DataTable from '../../components/DataTable';
 
@@ -12,6 +13,7 @@ const MonthlyPackageList = () => {
     const { items: packages, loading } = useSelector(state => state.packages);
     const { permissions = [] } = useSelector(state => state.auth);
     const [showModal, setShowModal] = useState(false);
+    const [showSyncModal, setShowSyncModal] = useState(false);
     const [editingPkg, setEditingPkg] = useState(null);
     const [formData, setFormData] = useState({ name: '', price: '', description: '', mikrotik_profile_name: '' });
 
@@ -130,6 +132,26 @@ const MonthlyPackageList = () => {
                     <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Paket Bulanan</h2>
                     <p className="text-slate-500 dark:text-slate-400 text-sm">Kelola rencana langganan untuk pelanggan Anda.</p>
                 </div>
+                <div className="flex gap-2">
+                    {permissions.includes('create.packages') && (
+                        <button 
+                            onClick={() => setShowSyncModal(true)}
+                            className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-sm text-sm font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm active:scale-95"
+                        >
+                            <RefreshCw className="w-4 h-4 text-indigo-500" />
+                            <span className="hidden sm:inline">Tarik Profile</span>
+                        </button>
+                    )}
+                    {permissions.includes('create.packages') && (
+                        <button 
+                            onClick={() => handleOpenModal()}
+                            className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-semibold transition-all shadow-sm"
+                        >
+                            <Plus className="w-4 h-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Tambah Paket</span>
+                        </button>
+                    )}
+                </div>
             </div>
 
             <DataTable 
@@ -138,17 +160,6 @@ const MonthlyPackageList = () => {
                 loading={loading}
                 onImport={handleImport}
                 exportFileName="paket-bulanan"
-                actions={
-                    permissions.includes('create.packages') && (
-                        <button 
-                            onClick={() => handleOpenModal()}
-                            className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-semibold transition-all shadow-sm"
-                        >
-                            <Plus className="w-4 h-4 sm:mr-2" />
-                            <span className="hidden sm:inline">Tambah Paket</span>
-                        </button>
-                    )
-                }
             />
 
             {/* Add/Edit Modal */}
@@ -216,6 +227,15 @@ const MonthlyPackageList = () => {
                     </div>
                 </div>
             )}
+
+            <SyncMikrotikModal 
+                isOpen={showSyncModal}
+                onClose={() => setShowSyncModal(false)}
+                onSyncComplete={() => dispatch(fetchPackages())}
+                title="Tarik Profile PPPoE"
+                endpoint="ppp-profiles"
+                description="Fitur ini akan mengambil semua PPP Profile dari Mikrotik dan membuatnya menjadi Paket Bulanan baru jika belum ada di sistem."
+            />
         </div>
     );
 };

@@ -1,17 +1,19 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Plus, Edit2, Trash2, Ticket, X, Clock, Calendar } from 'lucide-react';
+import { Plus, Edit2, Trash2, Ticket, X, Clock, Calendar, RefreshCw } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchVoucherPackages, deleteVoucherPackage } from '../../store/slices/voucherPackageSlice';
 import apiFetch from '../../utils/api';
 import { toast } from 'react-toastify';
 
 import DataTable from '../../components/DataTable';
+import SyncMikrotikModal from '../../components/SyncMikrotikModal';
 
 const VoucherPackageList = () => {
     const dispatch = useDispatch();
     const { items: packages, loading } = useSelector(state => state.voucherPackages);
     const { permissions = [] } = useSelector(state => state.auth);
     const [showModal, setShowModal] = useState(false);
+    const [showSyncModal, setShowSyncModal] = useState(false);
     const [editingPkg, setEditingPkg] = useState(null);
     const [formData, setFormData] = useState({ 
         name: '', 
@@ -187,15 +189,26 @@ const VoucherPackageList = () => {
                 onImport={handleImport}
                 exportFileName="paket-voucher"
                 actions={
-                    permissions.includes('create.master_vouchers') && (
-                        <button 
-                            onClick={() => handleOpenModal()}
-                            className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-semibold transition-all shadow-sm"
-                        >
-                            <Plus className="w-4 h-4 sm:mr-2" />
-                            <span className="hidden sm:inline">Tambah Paket</span>
-                        </button>
-                    )
+                    <div className="flex gap-2">
+                        {permissions.includes('create.master_vouchers') && (
+                            <button 
+                                onClick={() => setShowSyncModal(true)}
+                                className="flex items-center px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-white rounded-sm text-sm font-semibold transition-all"
+                            >
+                                <RefreshCw className="w-4 h-4 sm:mr-2" />
+                                <span className="hidden sm:inline">Sinkronisasi</span>
+                            </button>
+                        )}
+                        {permissions.includes('create.master_vouchers') && (
+                            <button 
+                                onClick={() => handleOpenModal()}
+                                className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm font-semibold transition-all shadow-sm"
+                            >
+                                <Plus className="w-4 h-4 sm:mr-2" />
+                                <span className="hidden sm:inline">Tambah Paket</span>
+                            </button>
+                        )}
+                    </div>
                 }
             />
 
@@ -326,6 +339,15 @@ const VoucherPackageList = () => {
                     </div>
                 </div>
             )}
+            
+            <SyncMikrotikModal 
+                isOpen={showSyncModal}
+                onClose={() => setShowSyncModal(false)}
+                onSyncComplete={() => dispatch(fetchVoucherPackages())}
+                title="Tarik Profile Hotspot"
+                endpoint="hotspot-profiles"
+                description="Fitur ini akan mengambil semua Hotspot Profile dari Mikrotik dan membuatnya menjadi Paket Voucher baru jika belum ada di sistem."
+            />
         </div>
     );
 };
